@@ -1,0 +1,51 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:9090/realms/hrm-realm
+
+  cloud:
+    gateway:
+      routes:
+
+        - id: organization-service
+          uri: lb://ORGANIZATION-SERVICE
+          predicates:
+            - Path=/api/organization/**
+
+        - id: employee-service
+          uri: lb://EMPLOYEE-SERVICE
+          predicates:
+            - Path=/api/employees/**
+
+        - id: attendance-service
+          uri: lb://ATTENDANCE-SERVICE
+          predicates:
+            - Path=/api/attendance/**
+
+        - id: leave-service
+          uri: lb://LEAVE-SERVICE
+          predicates:
+            - Path=/api/leave/**
+
+        - id: payroll-service
+          uri: lb://PAYROLL-SERVICE
+          predicates:
+            - Path=/api/payroll/**
+
+        - id: notification-service
+          uri: lb://NOTIFICATION-SERVICE
+          predicates:
+            - Path=/api/notification/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka
