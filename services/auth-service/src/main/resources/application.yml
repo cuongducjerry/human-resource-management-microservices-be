@@ -1,0 +1,27 @@
+server:
+  port: 8087
+
+spring:
+  application:
+    name: auth-service
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:9090/realms/hrm-realm
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+    register-with-eureka: true
+    fetch-registry: true
+
+keycloak:
+  auth-server-url: http://localhost:9090
+  realm: hrm-realm
+  client-id: hrm-client
+  client-secret: agqLg7QgphMWFDLeye4sh1S6Y574cAvZ
+  token-url: http://localhost:9090/realms/hrm-realm/protocol/openid-connect/token
+  logout-url: http://localhost:9090/realms/hrm-realm/protocol/openid-connect/logout

@@ -13,39 +13,48 @@ spring:
 
   cloud:
     gateway:
-      routes:
+      server:
+        webflux:
+          routes:
 
-        - id: organization-service
-          uri: lb://ORGANIZATION-SERVICE
-          predicates:
-            - Path=/api/organization/**
+            - id: organization-service
+              uri: lb://organization-service
+              predicates:
+                - Path=/api/organization/**
 
-        - id: employee-service
-          uri: lb://EMPLOYEE-SERVICE
-          predicates:
-            - Path=/api/employees/**
+            - id: employee-service
+              uri: lb://employee-service
+              predicates:
+                - Path=/api/employees/**
 
-        - id: attendance-service
-          uri: lb://ATTENDANCE-SERVICE
-          predicates:
-            - Path=/api/attendance/**
+            - id: attendance-service
+              uri: lb://attendance-service
+              predicates:
+                - Path=/api/attendance/**
 
-        - id: leave-service
-          uri: lb://LEAVE-SERVICE
-          predicates:
-            - Path=/api/leave/**
+            - id: leave-service
+              uri: lb://leave-service
+              predicates:
+                - Path=/api/leave/**
 
-        - id: payroll-service
-          uri: lb://PAYROLL-SERVICE
-          predicates:
-            - Path=/api/payroll/**
+            - id: payroll-service
+              uri: lb://payroll-service
+              predicates:
+                - Path=/api/payroll/**
 
-        - id: notification-service
-          uri: lb://NOTIFICATION-SERVICE
-          predicates:
-            - Path=/api/notification/**
+            - id: notification-service
+              uri: lb://notification-service
+              predicates:
+                - Path=/api/notification/**
+
+            - id: auth-service
+              uri: lb://auth-service
+              predicates:
+                - Path=/api/auth/**
 
 eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka
+    register-with-eureka: true
+    fetch-registry: true
