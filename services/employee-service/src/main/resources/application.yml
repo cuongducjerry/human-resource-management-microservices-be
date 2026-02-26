@@ -5,6 +5,12 @@ spring:
   application:
     name: employee-service
 
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:9090/realms/hrm-realm
+
   datasource:
     url: jdbc:postgresql://localhost:5432/hrm_employee
     username: postgres

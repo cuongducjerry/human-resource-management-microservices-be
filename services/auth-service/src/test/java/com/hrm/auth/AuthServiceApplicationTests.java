@@ -1,4 +1,4 @@
-package com.hrm.authservice;
+package com.hrm.auth;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
