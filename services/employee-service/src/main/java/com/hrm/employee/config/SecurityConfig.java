@@ -22,10 +22,8 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/employees/**")
-                        .hasRole("SUPER_ADMIN")
-                        .anyRequest()
-                        .authenticated()
+                        .requestMatchers("/api/employees/**").authenticated()
+                        .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 ->
                         oauth2.jwt(jwt ->
@@ -52,7 +50,7 @@ public class SecurityConfig {
             List<String> roles = (List<String>) realmAccess.get("roles");
 
             return roles.stream()
-                    .map(SimpleGrantedAuthority::new)
+                    .map(role -> new SimpleGrantedAuthority(role))
                     .collect(Collectors.toList());
         });
 

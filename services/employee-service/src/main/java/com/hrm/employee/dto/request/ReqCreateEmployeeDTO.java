@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Data
-public class ReqCreateEmployee {
+public class ReqCreateEmployeeDTO {
 
     @NotBlank(message = "Full name must not be blank")
     private String fullName;
@@ -27,5 +27,4 @@ public class ReqCreateEmployee {
 
     @NotEmpty(message = "Roles must not be empty")
     private List<String> roles;
-
 }

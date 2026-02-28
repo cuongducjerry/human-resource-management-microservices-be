@@ -4,6 +4,7 @@ import com.hrm.employee.entity.RestResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -51,6 +52,14 @@ public class GlobalException {
             AccessDeniedException ex
     ) {
         return build(HttpStatus.FORBIDDEN, "You do not have permission");
+    }
+
+    @ExceptionHandler({
+            UsernameNotFoundException.class,
+            IdInvalidException.class
+    })
+    public ResponseEntity<RestResponse<Object>> handleNotFound(Exception ex) {
+        return build(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
 }

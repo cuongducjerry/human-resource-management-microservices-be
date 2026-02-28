@@ -3,6 +3,7 @@ package com.hrm.auth.controller;
 import com.hrm.auth.dto.request.ReqCreateKeycloakUserDTO;
 import com.hrm.auth.dto.request.ReqLoginDTO;
 import com.hrm.auth.dto.request.ReqLogoutDTO;
+import com.hrm.auth.dto.request.ReqUpdateUserProfileDTO;
 import com.hrm.auth.dto.response.ResLoginDTO;
 import com.hrm.auth.service.AuthService;
 import com.hrm.auth.util.annotation.ApiMessage;
@@ -48,7 +49,8 @@ public class AuthController {
     @GetMapping("/refresh")
     @ApiMessage("Get User by refresh token")
     public ResponseEntity<ResLoginDTO> refresh(
-            @CookieValue("refresh_token") String refreshToken
+            @CookieValue(value = "refresh_token", required = false)
+            String refreshToken
     ) {
 
         ResLoginDTO result = authService.refresh(refreshToken);
@@ -74,10 +76,35 @@ public class AuthController {
         return ResponseEntity.ok(userId);
     }
 
+    @PutMapping("/users/{userId}/profile")
+    public ResponseEntity<Void> updateUserProfile(
+            @PathVariable String userId,
+            @Valid @RequestBody ReqUpdateUserProfileDTO request
+    ) {
+
+        authService.updateUserProfile(
+                userId,
+                request.getFirstName(),
+                request.getLastName()
+        );
+
+        return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/users/{id}/disable")
+    @ApiMessage("Disable user")
+    public ResponseEntity<Void> disableUser(
+            @PathVariable String id
+    ) {
+        authService.disableUser(id);
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("/logout")
     @ApiMessage("Logout User")
     public ResponseEntity<Void> logout(
-            @CookieValue("refresh_token") String refreshToken
+            @CookieValue(value = "refresh_token", required = false)
+            String refreshToken
     ) {
 
         authService.logout(refreshToken);
@@ -93,6 +120,22 @@ public class AuthController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, deleteCookie.toString())
                 .build();
+    }
+
+    @DeleteMapping("/users/{id}")
+    @ApiMessage("Delete user permanently")
+    public ResponseEntity<Void> deleteUser(@PathVariable String id) {
+
+        authService.deleteUser(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/users/{id}/enable")
+    @ApiMessage("Enable user")
+    public ResponseEntity<Void> enableUser(@PathVariable String id) {
+
+        authService.enableUser(id);
+        return ResponseEntity.ok().build();
     }
 
 }

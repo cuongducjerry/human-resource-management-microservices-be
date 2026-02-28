@@ -138,13 +138,13 @@ public class AuthService {
         user.put("username", req.getUsername());
         user.put("email", req.getEmail());
         user.put("enabled", true);
+        user.put("firstName",
+                req.getFirstName() != null ? req.getFirstName() : "Default");
+        user.put("lastName",
+                req.getLastName() != null ? req.getLastName() : "User");
 
-        Map<String, Object> password = new HashMap<>();
-        password.put("type", "password");
-        password.put("value", req.getPassword());
-        password.put("temporary", false);
 
-        user.put("credentials", List.of(password));
+        user.put("requiredActions", Collections.emptyList());
 
         HttpEntity<Map<String, Object>> request =
                 new HttpEntity<>(user, headers);
@@ -152,8 +152,9 @@ public class AuthService {
         ResponseEntity<Void> response =
                 restTemplate.postForEntity(adminBaseUrl + "/users", request, Void.class);
 
-        if (response.getStatusCode() != HttpStatus.CREATED) {
-            throw new RuntimeException("Failed to create user. Status: " + response.getStatusCode());
+        if (!response.getStatusCode().is2xxSuccessful()) {
+            throw new RuntimeException("Failed to create user. Status: "
+                    + response.getStatusCode());
         }
 
         URI location = response.getHeaders().getLocation();
@@ -164,11 +165,136 @@ public class AuthService {
         String userId = location.toString()
                 .substring(location.toString().lastIndexOf("/") + 1);
 
+        // Set password
+        setUserPassword(userId, req.getPassword(), adminToken);
+
+        // Assign roles
         if (req.getRoles() != null && !req.getRoles().isEmpty()) {
             assignRealmRoles(userId, req.getRoles(), adminToken);
         }
 
         return userId;
+    }
+
+    private void setUserPassword(String userId, String password, String adminToken) {
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(adminToken);
+
+        Map<String, Object> pass = new HashMap<>();
+        pass.put("type", "password");
+        pass.put("value", password);
+        pass.put("temporary", false);
+
+        String resetUrl = adminBaseUrl + "/users/" + userId + "/reset-password";
+
+        ResponseEntity<Void> response = restTemplate.exchange(
+                resetUrl,
+                HttpMethod.PUT,
+                new HttpEntity<>(pass, headers),
+                Void.class
+        );
+
+        if (!response.getStatusCode().is2xxSuccessful()) {
+            throw new RuntimeException("Failed to set password");
+        }
+    }
+
+    public void disableUser(String userId) {
+
+        String adminToken = getAdminAccessToken();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(adminToken);
+
+        Map<String, Object> updateBody = new HashMap<>();
+        updateBody.put("enabled", false);
+
+        HttpEntity<Map<String, Object>> request =
+                new HttpEntity<>(updateBody, headers);
+
+        try {
+            restTemplate.exchange(
+                    adminBaseUrl + "/users/" + userId,
+                    HttpMethod.PUT,
+                    request,
+                    Void.class
+            );
+        } catch (HttpClientErrorException e) {
+            throw new RuntimeException("Failed to disable user: " + e.getResponseBodyAsString());
+        }
+    }
+
+    public void updateUserProfile(String userId,
+                                  String firstName,
+                                  String lastName) {
+
+        String adminToken = getAdminAccessToken();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(adminToken);
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("firstName", firstName);
+        body.put("lastName", lastName);
+
+        String url = adminBaseUrl + "/users/" + userId;
+
+        ResponseEntity<Void> response = restTemplate.exchange(
+                url,
+                HttpMethod.PUT,
+                new HttpEntity<>(body, headers),
+                Void.class
+        );
+
+        if (!response.getStatusCode().is2xxSuccessful()) {
+            throw new RuntimeException("Failed to update Keycloak profile");
+        }
+    }
+
+    public void deleteUser(String userId) {
+
+        String adminToken = getAdminAccessToken();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(adminToken);
+
+        HttpEntity<Void> request = new HttpEntity<>(headers);
+
+        try {
+            restTemplate.exchange(
+                    adminBaseUrl + "/users/" + userId,
+                    HttpMethod.DELETE,
+                    request,
+                    Void.class
+            );
+        } catch (HttpClientErrorException e) {
+            throw new RuntimeException("Failed to delete user: " + e.getResponseBodyAsString());
+        }
+    }
+
+    public void enableUser(String userId) {
+        String adminToken = getAdminAccessToken();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(adminToken);
+
+        Map<String, Object> updateBody = new HashMap<>();
+        updateBody.put("enabled", true);
+
+        HttpEntity<Map<String, Object>> request =
+                new HttpEntity<>(updateBody, headers);
+
+        restTemplate.exchange(
+                adminBaseUrl + "/users/" + userId,
+                HttpMethod.PUT,
+                request,
+                Void.class
+        );
     }
 
     private void assignRealmRoles(String userId,
@@ -249,7 +375,8 @@ public class AuthService {
             return response.getBody();
 
         } catch (HttpClientErrorException e) {
-            throw new InvalidLoginException("Invalid username or password");
+//            throw new InvalidLoginException("Invalid username or password");
+            throw e;
         }
     }
 
