@@ -15,6 +15,8 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -136,6 +138,13 @@ public class AuthController {
 
         authService.enableUser(id);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/users/{id}/roles")
+    @ApiMessage("Get user roles")
+    public ResponseEntity<List<String>> getUserRoles(@PathVariable String id) {
+
+        return ResponseEntity.ok(authService.getUserRoles(id));
     }
 
 }

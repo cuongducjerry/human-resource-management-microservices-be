@@ -1,6 +1,7 @@
 package com.hrm.employee.util.error;
 
 import com.hrm.employee.entity.RestResponse;
+import jakarta.ws.rs.ForbiddenException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -61,5 +62,11 @@ public class GlobalException {
     public ResponseEntity<RestResponse<Object>> handleNotFound(Exception ex) {
         return build(HttpStatus.NOT_FOUND, ex.getMessage());
     }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<RestResponse<Object>> handleForbidden(Exception ex) {
+        return build(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
+
 
 }

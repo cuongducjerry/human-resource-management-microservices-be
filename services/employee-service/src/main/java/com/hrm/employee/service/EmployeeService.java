@@ -16,6 +16,7 @@ import com.hrm.employee.repository.EmployeeRepository;
 import com.hrm.employee.util.SecurityUtil;
 import com.hrm.employee.util.constant.EmployeeStatus;
 import com.hrm.employee.util.error.IdInvalidException;
+import jakarta.ws.rs.ForbiddenException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -43,9 +44,28 @@ public class EmployeeService {
 
         String keycloakUserId = null;
 
+        List<String> currentRoles = SecurityUtil.getCurrentUserRoles();
+
+        boolean isSuperAdmin = currentRoles.contains("ROLE_SUPER_ADMIN");
+        boolean isHrAdmin = currentRoles.contains("ROLE_HR_ADMIN");
+
+        if (!isSuperAdmin && !isHrAdmin) {
+            throw new ForbiddenException("You do not have permission to create employee");
+        }
+
+        // If it's HR_ADMIN, you shouldn't create HR_ADMIN or SUPER_ADMIN.
+        if (isHrAdmin) {
+            if (req.getRoles().contains("ROLE_HR_ADMIN")
+                    || req.getRoles().contains("ROLE_SUPER_ADMIN")
+                    || req.getRoles().contains("ROLE_ACCOUNTANT")) {
+
+                throw new ForbiddenException("HR_ADMIN cannot create this role");
+            }
+        }
+
         try {
 
-            // 🔹 Tách firstName / lastName từ fullName
+            // Separate firstName / lastName from fullName
             String fullName = req.getFullName().trim();
             String[] parts = fullName.split("\\s+");
 
@@ -190,10 +210,32 @@ public class EmployeeService {
 
         Employee employee = getEmployeeOrThrow(id);
 
-        // Disable it in Keycloak
+        List<String> currentUserRoles = SecurityUtil.getCurrentUserRoles();
+        List<String> targetUserRoles =
+                authClient.getUserRoles(employee.getKeycloakUserId());
+
+        boolean currentIsSuperAdmin =
+                currentUserRoles.contains("ROLE_SUPER_ADMIN");
+
+        boolean targetIsSuperAdmin =
+                targetUserRoles.contains("ROLE_SUPER_ADMIN");
+
+        // Do not delete SUPER_ADMIN
+        if (targetIsSuperAdmin) {
+            throw new ForbiddenException("Cannot delete SUPER_ADMIN");
+        }
+
+        // HR cannot delete other HRs.
+        if (!currentIsSuperAdmin &&
+                targetUserRoles.contains("ROLE_HR_ADMIN")) {
+
+            throw new ForbiddenException("You cannot delete HR_ADMIN");
+        }
+
+        // Disable bên Keycloak
         authClient.disableUser(employee.getKeycloakUserId());
 
-        // soft delete (Hibernate automatically updates active=false)
+        // Soft delete
         employeeRepository.delete(employee);
     }
 

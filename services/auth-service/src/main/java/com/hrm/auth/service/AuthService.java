@@ -255,6 +255,35 @@ public class AuthService {
         }
     }
 
+    public List<String> getUserRoles(String userId) {
+
+        String adminToken = getAdminAccessToken();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(adminToken);
+
+        HttpEntity<Void> request = new HttpEntity<>(headers);
+
+        String url = adminBaseUrl +
+                "/users/" + userId + "/role-mappings/realm";
+
+        ResponseEntity<List> response =
+                restTemplate.exchange(
+                        url,
+                        HttpMethod.GET,
+                        request,
+                        List.class
+                );
+
+        List<Map<String, Object>> roles = response.getBody();
+
+        if (roles == null) return List.of();
+
+        return roles.stream()
+                .map(r -> (String) r.get("name"))
+                .toList();
+    }
+
     public void deleteUser(String userId) {
 
         String adminToken = getAdminAccessToken();

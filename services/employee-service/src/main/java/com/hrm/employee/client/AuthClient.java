@@ -6,6 +6,8 @@ import com.hrm.employee.dto.request.ReqUpdateUserProfileDTO;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @FeignClient(name = "auth-service", configuration = FeignConfig.class)
 public interface AuthClient {
 
@@ -26,5 +28,8 @@ public interface AuthClient {
 
     @PutMapping("/api/auth/users/{id}/enable")
     void enableUser(@PathVariable("id") String id);
+
+    @GetMapping("/api/auth/users/{id}/roles")
+    List<String> getUserRoles(@PathVariable("id") String id);
 
 }
