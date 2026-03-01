@@ -1,7 +1,7 @@
 package com.hrm.employee.entity;
 
-import com.hrm.employee.util.constant.EmployeeStatus;
-import com.hrm.employee.util.constant.Gender;
+import com.hrm.employee.util.constant.ContractStatus;
+import com.hrm.employee.util.constant.ContractType;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.SQLDelete;
@@ -12,13 +12,18 @@ import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
-@Table(name = "employees")
-@SQLDelete(sql = "UPDATE employees SET active = false WHERE id = ?")
+@Table(name = "contracts",
+        indexes = {
+                @Index(name = "idx_contract_employee", columnList = "employee_id"),
+                @Index(name = "idx_contract_status", columnList = "status")
+        })
+@SQLDelete(sql = "UPDATE contracts SET active = false WHERE id = ?")
 @Where(clause = "active = true")
 @EntityListeners(AuditingEntityListener.class)
 @Getter
@@ -26,64 +31,41 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Employee {
+public class Contract {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    // ===== Keycloak Mapping =====
-    @Column(name = "keycloak_user_id", nullable = false, unique = true)
-    private String keycloakUserId;
+    // ===== Employee Reference (Microservice Style) =====
+    @Column(name = "employee_id", nullable = false)
+    private UUID employeeId;
 
-    @Column(name = "employee_code", nullable = false, unique = true)
-    private String employeeCode;
-
-    @Column(name = "full_name", nullable = false)
-    private String fullName;
-
-    @Column(nullable = false, unique = true)
-    private String email;
-
-    private String phone;
-
-    private LocalDate dateOfBirth;
-
+    // ===== Contract Info =====
     @Enumerated(EnumType.STRING)
-    private Gender gender;
-
-    private String address;
-
-    private String avatarUrl;
-
-    private LocalDate hireDate;
+    @Column(nullable = false)
+    private ContractType type;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private EmployeeStatus status;
+    private ContractStatus status;
 
-    // ===== Organization Reference (Microservice Style) =====
-    private UUID organizationId;
+    @Column(nullable = false)
+    private LocalDate startDate;
 
-    private UUID positionId;
+    private LocalDate endDate;
 
-    private UUID managerId;
+    @Column(nullable = false, precision = 18, scale = 2)
+    private BigDecimal salary;
 
-    // ===== Lifecycle Tracking =====
-    private LocalDate probationEndDate;
-
-    private LocalDate confirmedDate;
-
-    private LocalDate terminationDate;
-
-    private String terminationReason;
+    private String description;
 
     // ===== Soft Delete =====
     @Builder.Default
     @Column(nullable = false)
     private boolean active = true;
 
-    // ===== Auditing (Spring Data) =====
+    // ===== Auditing =====
     @CreatedDate
     @Column(updatable = false)
     private Instant createdAt;

@@ -1,9 +1,6 @@
 package com.hrm.auth.controller;
 
-import com.hrm.auth.dto.request.ReqCreateKeycloakUserDTO;
-import com.hrm.auth.dto.request.ReqLoginDTO;
-import com.hrm.auth.dto.request.ReqLogoutDTO;
-import com.hrm.auth.dto.request.ReqUpdateUserProfileDTO;
+import com.hrm.auth.dto.request.*;
 import com.hrm.auth.dto.response.ResLoginDTO;
 import com.hrm.auth.service.AuthService;
 import com.hrm.auth.util.annotation.ApiMessage;
@@ -155,6 +152,22 @@ public class AuthController {
     ) {
 
         authService.updateUserRoles(id, roles);
+        return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/users/{id}/change-password")
+    @ApiMessage("Change user password")
+    public ResponseEntity<Void> changePassword(
+            @PathVariable String id,
+            @Valid @RequestBody ReqChangePasswordDTO request
+    ) {
+
+        authService.changePassword(
+                id,
+                request.getCurrentPassword(),
+                request.getNewPassword()
+        );
+
         return ResponseEntity.ok().build();
     }
 

@@ -1,6 +1,7 @@
 package com.hrm.employee.client;
 
 import com.hrm.employee.config.FeignConfig;
+import com.hrm.employee.dto.request.ReqChangePasswordDTO;
 import com.hrm.employee.dto.request.ReqCreateKeycloakUserDTO;
 import com.hrm.employee.dto.request.ReqUpdateUserProfileDTO;
 import org.springframework.cloud.openfeign.FeignClient;
@@ -36,6 +37,12 @@ public interface AuthClient {
     void updateUserRoles(
             @PathVariable("id") String id,
             @RequestBody List<String> roles
+    );
+
+    @PutMapping("/api/auth/users/{id}/change-password")
+    void changePassword(
+            @PathVariable("id") String id,
+            @RequestBody ReqChangePasswordDTO request
     );
 
 }

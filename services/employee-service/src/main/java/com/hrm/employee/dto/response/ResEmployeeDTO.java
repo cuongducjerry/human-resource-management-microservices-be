@@ -29,13 +29,22 @@ public class ResEmployeeDTO {
 
     private EmployeeStatus status;
 
-    private UUID departmentId;
+    private UUID organizationId;
 
     private UUID positionId;
 
+    private UUID managerId;
+
+    private String avatarUrl;
+
     private LocalDate hireDate;
 
-    private Instant createdAt;
+    // ===== Lifecycle =====
+    private LocalDate probationEndDate;
+    private LocalDate confirmedDate;
+    private LocalDate terminationDate;
+    private String terminationReason;
 
+    private Instant createdAt;
     private Instant updatedAt;
 }

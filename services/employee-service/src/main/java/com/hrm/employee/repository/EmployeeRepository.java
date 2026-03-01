@@ -18,6 +18,8 @@ public interface EmployeeRepository extends JpaRepository<Employee, UUID>, JpaSp
 
     Optional<Employee> findByEmail(String email);
 
+    boolean existsByEmail(String email);
+
     Optional<Employee> findByEmployeeCode(String employeeCode);
 
     @Query(value = "SELECT * FROM employees WHERE active = false",

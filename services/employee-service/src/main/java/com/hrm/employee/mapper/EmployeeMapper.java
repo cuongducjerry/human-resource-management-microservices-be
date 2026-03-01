@@ -19,9 +19,20 @@ public class EmployeeMapper {
         dto.setPhone(employee.getPhone());
         dto.setGender(employee.getGender());
         dto.setStatus(employee.getStatus());
-        dto.setDepartmentId(employee.getDepartmentId());
+
+        dto.setOrganizationId(employee.getOrganizationId());
         dto.setPositionId(employee.getPositionId());
+        dto.setManagerId(employee.getManagerId());
+        dto.setAvatarUrl(employee.getAvatarUrl());
+
         dto.setHireDate(employee.getHireDate());
+
+        // Lifecycle fields
+        dto.setProbationEndDate(employee.getProbationEndDate());
+        dto.setConfirmedDate(employee.getConfirmedDate());
+        dto.setTerminationDate(employee.getTerminationDate());
+        dto.setTerminationReason(employee.getTerminationReason());
+
         dto.setCreatedAt(employee.getCreatedAt());
         dto.setUpdatedAt(employee.getUpdatedAt());
 
@@ -36,8 +47,12 @@ public class EmployeeMapper {
         dto.setEmployeeCode(employee.getEmployeeCode());
         dto.setFullName(employee.getFullName());
         dto.setEmail(employee.getEmail());
-        dto.setDepartmentId(employee.getDepartmentId());
+
+
+        dto.setOrganizationId(employee.getOrganizationId());
         dto.setPositionId(employee.getPositionId());
+        dto.setManagerId(employee.getManagerId());
+
         dto.setKeycloakUserId(employee.getKeycloakUserId());
 
         return dto;

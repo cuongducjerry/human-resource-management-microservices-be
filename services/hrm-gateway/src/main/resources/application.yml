@@ -25,7 +25,7 @@ spring:
             - id: employee-service
               uri: lb://employee-service
               predicates:
-                - Path=/api/employees/**
+                - Path=/api/employees/**, /api/contracts/**
 
             - id: attendance-service
               uri: lb://attendance-service

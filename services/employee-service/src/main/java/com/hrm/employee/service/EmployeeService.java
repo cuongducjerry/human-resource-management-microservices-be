@@ -1,10 +1,9 @@
 package com.hrm.employee.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hrm.employee.client.AuthClient;
-import com.hrm.employee.dto.request.ReqCreateEmployeeDTO;
-import com.hrm.employee.dto.request.ReqCreateKeycloakUserDTO;
-import com.hrm.employee.dto.request.ReqEmployeeSelfUpdateDTO;
-import com.hrm.employee.dto.request.ReqUpdateUserProfileDTO;
+import com.hrm.employee.dto.request.*;
 import com.hrm.employee.dto.response.ResCreateEmployeeDTO;
 import com.hrm.employee.dto.response.ResEmployeeDTO;
 import com.hrm.employee.dto.response.ResultPaginationDTO;
@@ -16,14 +15,20 @@ import com.hrm.employee.repository.EmployeeRepository;
 import com.hrm.employee.util.SecurityUtil;
 import com.hrm.employee.util.constant.EmployeeStatus;
 import com.hrm.employee.util.error.IdInvalidException;
+import com.hrm.employee.util.error.InternalServerException;
+import com.hrm.employee.util.error.RequestException;
+import feign.FeignException;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.ForbiddenException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -39,6 +44,7 @@ public class EmployeeService {
     private final AuthClient authClient;
     private final EmployeeMapper employeeMapper;
     private final PaginationMapper paginationMapper;
+    private final CloudinaryService cloudinaryService;
 
     // ================= CREATE =================
     @Transactional
@@ -46,20 +52,20 @@ public class EmployeeService {
 
         String keycloakUserId = null;
 
+        if (employeeRepository.existsByEmail(req.getEmail())) {
+            throw new BadRequestException("Email already exists");
+        }
+
+        if (req.getRoles() == null || req.getRoles().isEmpty()) {
+            throw new BadRequestException("Roles cannot be empty");
+        }
+
         List<String> currentRoles = SecurityUtil.getCurrentUserRoles();
         boolean isSuperAdmin = currentRoles.contains("ROLE_SUPER_ADMIN");
         boolean isHrAdmin = currentRoles.contains("ROLE_HR_ADMIN");
 
         if (!isSuperAdmin && !isHrAdmin) {
-            throw new ForbiddenException("You do not have permission to create employee");
-        }
-
-        if (isHrAdmin) {
-            if (req.getRoles().contains("ROLE_HR_ADMIN")
-                    || req.getRoles().contains("ROLE_SUPER_ADMIN")
-                    || req.getRoles().contains("ROLE_ACCOUNTANT")) {
-                throw new ForbiddenException("HR_ADMIN cannot create this role");
-            }
+            throw new ForbiddenException("No permission");
         }
 
         try {
@@ -69,20 +75,15 @@ public class EmployeeService {
             String firstName = parts[parts.length - 1];
             String lastName = parts.length > 1
                     ? String.join(" ", Arrays.copyOfRange(parts, 0, parts.length - 1))
-                    : parts[0];
+                    : "";
 
-            // ===== Validate status =====
             EmployeeStatus status = req.getStatus() != null
                     ? req.getStatus()
                     : EmployeeStatus.PROBATION;
 
-            if (!isSuperAdmin && status != EmployeeStatus.PROBATION) {
-                throw new BadRequestException("HR_ADMIN can only create PROBATION employee");
-            }
-
             if (status == EmployeeStatus.RESIGNED
                     || status == EmployeeStatus.TERMINATED) {
-                throw new BadRequestException("Cannot create employee with final status");
+                throw new BadRequestException("Cannot create final status employee");
             }
 
             // ===== Create Keycloak =====
@@ -96,28 +97,34 @@ public class EmployeeService {
 
             keycloakUserId = authClient.createUser(userReq);
 
-            // ===== Sync Keycloak based on status =====
-            if (status == EmployeeStatus.PROBATION) {
-                authClient.disableUser(keycloakUserId);
-            } else if (status == EmployeeStatus.ACTIVE) {
+            // ===== Sync Keycloak =====
+            if (status == EmployeeStatus.ACTIVE
+                    || status == EmployeeStatus.ON_LEAVE) {
                 authClient.enableUser(keycloakUserId);
+            } else {
+                authClient.disableUser(keycloakUserId);
             }
 
-            // ===== Generate employee code =====
             UUID id = UUID.randomUUID();
             String employeeCode = generateEmployeeCode(id);
 
-            // ===== Save employee =====
             Employee employee = Employee.builder()
                     .keycloakUserId(keycloakUserId)
                     .employeeCode(employeeCode)
                     .fullName(req.getFullName())
                     .email(req.getEmail())
-                    .departmentId(req.getDepartmentId())
+                    .organizationId(req.getOrganizationId())
                     .positionId(req.getPositionId())
+                    .managerId(req.getManagerId())
+                    .hireDate(LocalDate.now())
                     .status(status)
                     .active(true)
                     .build();
+
+            // ===== Probation auto set =====
+            if (status == EmployeeStatus.PROBATION) {
+                employee.setProbationEndDate(LocalDate.now().plusMonths(2));
+            }
 
             employeeRepository.save(employee);
 
@@ -125,9 +132,7 @@ public class EmployeeService {
 
         } catch (Exception e) {
             if (keycloakUserId != null) {
-                try {
-                    authClient.deleteUser(keycloakUserId);
-                } catch (Exception ignored) {}
+                authClient.deleteUser(keycloakUserId);
             }
             throw e;
         }
@@ -154,6 +159,36 @@ public class EmployeeService {
                 pageNumber, pageSize, totalPages, totalElements, list);
     }
 
+//    public void changePassword(ReqChangePasswordDTO req) {
+//
+//        String keycloakUserId = SecurityUtil.getCurrentUserId();
+//
+//        try {
+//            authClient.changePassword(keycloakUserId, req);
+//
+//        } catch (FeignException.BadRequest e) {
+//
+//            throw new RequestException("Current password is incorrect");
+//
+//        } catch (FeignException.Forbidden e) {
+//
+//            throw new ForbiddenException("Access denied from auth service");
+//
+//        } catch (FeignException.NotFound e) {
+//
+//            throw new IdInvalidException("User not found in auth service");
+//
+//        } catch (FeignException e) {
+//
+//            throw new InternalServerException("Auth service is unavailable");
+//        }
+//    }
+
+    public void changePassword(ReqChangePasswordDTO req) {
+        String keycloakUserId = SecurityUtil.getCurrentUserId();
+        authClient.changePassword(keycloakUserId, req);
+    }
+
     // ================= VIEW DETAIL =================
     public ResEmployeeDTO getEmployeeById(UUID id) {
 
@@ -162,7 +197,6 @@ public class EmployeeService {
         return employeeMapper.convertToResEmployeeDTO(employee);
     }
 
-    // ================= UPDATE STATUS =================
     // ================= UPDATE STATUS =================
     @Transactional
     public ResEmployeeDTO updateStatus(UUID id, EmployeeStatus newStatus) {
@@ -192,17 +226,50 @@ public class EmployeeService {
 
         validateStatusTransition(employee.getStatus(), newStatus);
 
+        // ===== Lifecycle Handling =====
+        LocalDate today = LocalDate.now();
+
+        switch (newStatus) {
+
+            case ACTIVE -> {
+                // If the status changes from PROBATION to ACTIVE -> it is considered confirmed.
+                if (employee.getProbationEndDate() == null) {
+                    employee.setProbationEndDate(today);
+                }
+            }
+
+            case TERMINATED -> {
+                employee.setTerminationDate(today);
+                if (employee.getTerminationReason() == null) {
+                    employee.setTerminationReason("Company terminated contract");
+                }
+            }
+
+            case RESIGNED -> {
+                employee.setTerminationDate(today);
+                if (employee.getTerminationReason() == null) {
+                    employee.setTerminationReason("Employee resigned");
+                }
+            }
+
+            default -> {
+                // PROBATION, ON_LEAVE
+            }
+        }
+
         employee.setStatus(newStatus);
         employeeRepository.save(employee);
 
         // ===== Sync Keycloak =====
-        if (newStatus == EmployeeStatus.RESIGNED ||
-                newStatus == EmployeeStatus.TERMINATED) {
-            authClient.disableUser(employee.getKeycloakUserId());
-        }
+        if (newStatus == EmployeeStatus.PROBATION
+                || newStatus == EmployeeStatus.ACTIVE
+                || newStatus == EmployeeStatus.ON_LEAVE) {
 
-        if (newStatus == EmployeeStatus.ACTIVE) {
             authClient.enableUser(employee.getKeycloakUserId());
+
+        } else {
+            // TERMINATED or RESIGNED
+            authClient.disableUser(employee.getKeycloakUserId());
         }
 
         return employeeMapper.convertToResEmployeeDTO(employee);
@@ -277,6 +344,12 @@ public class EmployeeService {
 
         Employee employee = getEmployeeOrThrow(id);
 
+        String currentUserId = SecurityUtil.getCurrentUserId();
+
+        if (employee.getKeycloakUserId().equals(currentUserId)) {
+            throw new ForbiddenException("Cannot update your own roles");
+        }
+
         List<String> currentRoles = SecurityUtil.getCurrentUserRoles();
         boolean isSuperAdmin = currentRoles.contains("ROLE_SUPER_ADMIN");
 
@@ -284,7 +357,51 @@ public class EmployeeService {
             throw new ForbiddenException("Only SUPER_ADMIN can update roles");
         }
 
+        if (newRoles.contains("ROLE_SUPER_ADMIN")) {
+            throw new ForbiddenException("Cannot assign SUPER_ADMIN role");
+        }
+
         authClient.updateUserRoles(employee.getKeycloakUserId(), newRoles);
+    }
+
+    @Transactional
+    public ResEmployeeDTO updateAvatar(MultipartFile file) {
+
+        String keycloakUserId = SecurityUtil.getCurrentUserId();
+
+        Employee employee = employeeRepository
+                .findByKeycloakUserId(keycloakUserId)
+                .orElseThrow(() -> new IdInvalidException("Employee not found"));
+
+        // Delete old photos if any
+        if (employee.getAvatarUrl() != null && !employee.getAvatarUrl().isBlank()) {
+            cloudinaryService.deleteAvatar(employee.getAvatarUrl());
+        }
+
+        // Upload new photos
+        String avatarUrl = cloudinaryService.uploadAvatar(file);
+
+        // Update DB
+        employee.setAvatarUrl(avatarUrl);
+
+        return employeeMapper.convertToResEmployeeDTO(employee);
+    }
+
+    @Transactional
+    public ResEmployeeDTO confirmEmployee(UUID id) {
+
+        Employee employee = getEmployeeOrThrow(id);
+
+        if (employee.getStatus() != EmployeeStatus.PROBATION) {
+            throw new BadRequestException("Only PROBATION can confirm");
+        }
+
+        employee.setStatus(EmployeeStatus.ACTIVE);
+        employee.setConfirmedDate(LocalDate.now());
+
+        authClient.enableUser(employee.getKeycloakUserId());
+
+        return employeeMapper.convertToResEmployeeDTO(employee);
     }
 
     // ================= VALIDATE STATUS =================
@@ -344,6 +461,11 @@ public class EmployeeService {
 
         Employee employee = employeeRepository.findByIdNative(id)
                 .orElseThrow(() -> new IdInvalidException("Employee not found"));
+
+        if (employee.getStatus() == EmployeeStatus.RESIGNED
+                || employee.getStatus() == EmployeeStatus.TERMINATED) {
+            throw new BadRequestException("Cannot restore final status employee");
+        }
 
         List<String> targetRoles =
                 authClient.getUserRoles(employee.getKeycloakUserId());

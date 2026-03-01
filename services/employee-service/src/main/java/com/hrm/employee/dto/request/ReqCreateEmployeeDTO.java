@@ -20,11 +20,13 @@ public class ReqCreateEmployeeDTO {
     @NotBlank(message = "Email must not be blank")
     private String email;
 
-    @NotNull(message = "Department ID must not be null")
-    private UUID departmentId;
+    @NotNull(message = "Organization ID must not be null")
+    private UUID organizationId;
 
     @NotNull(message = "Position ID must not be null")
     private UUID positionId;
+
+    private UUID managerId;
 
     @NotEmpty(message = "Roles must not be empty")
     private List<String> roles;

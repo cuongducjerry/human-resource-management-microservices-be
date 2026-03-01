@@ -13,6 +13,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.net.URI;
 import java.util.*;
@@ -355,6 +356,45 @@ public class AuthService {
         );
     }
 
+    public void changePassword(String userId,
+                               String currentPassword,
+                               String newPassword) {
+
+        // 1. Validate current password by trying to log in
+        try {
+            callTokenEndpoint(
+                    extractUsernameFromUserId(userId),
+                    currentPassword,
+                    "password",
+                    false
+            );
+        } catch (HttpClientErrorException e) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Current password is incorrect"
+            );
+        }
+
+        // 2. If correct -> reset password using admin token
+        String adminToken = getAdminAccessToken();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(adminToken);
+
+        Map<String, Object> pass = new HashMap<>();
+        pass.put("type", "password");
+        pass.put("value", newPassword);
+        pass.put("temporary", false);
+
+        restTemplate.exchange(
+                adminBaseUrl + "/users/" + userId + "/reset-password",
+                HttpMethod.PUT,
+                new HttpEntity<>(pass, headers),
+                Void.class
+        );
+    }
+
     private void removeRealmRoles(String userId,
                                   List<String> roleNames,
                                   String adminToken) {
@@ -474,8 +514,7 @@ public class AuthService {
             return response.getBody();
 
         } catch (HttpClientErrorException e) {
-//            throw new InvalidLoginException("Invalid username or password");
-            throw e;
+            throw new InvalidLoginException("Invalid username or password");
         }
     }
 
@@ -519,5 +558,23 @@ public class AuthService {
         } catch (Exception e) {
             throw new RuntimeException("Cannot parse access token");
         }
+    }
+
+    private String extractUsernameFromUserId(String userId) {
+
+        String adminToken = getAdminAccessToken();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(adminToken);
+
+        ResponseEntity<Map> response =
+                restTemplate.exchange(
+                        adminBaseUrl + "/users/" + userId,
+                        HttpMethod.GET,
+                        new HttpEntity<>(headers),
+                        Map.class
+                );
+
+        return (String) response.getBody().get("username");
     }
 }

@@ -11,18 +11,12 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ResCreateEmployeeDTO {
-
     private UUID id;
-
     private String employeeCode;
-
     private String fullName;
-
     private String email;
-
-    private UUID departmentId;
-
+    private UUID organizationId;
     private UUID positionId;
-
+    private UUID managerId;
     private String keycloakUserId;
 }

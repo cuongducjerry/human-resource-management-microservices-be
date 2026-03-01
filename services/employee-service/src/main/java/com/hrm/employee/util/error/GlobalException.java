@@ -1,6 +1,9 @@
 package com.hrm.employee.util.error;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hrm.employee.entity.RestResponse;
+import feign.FeignException;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.ForbiddenException;
 import org.springframework.http.HttpStatus;
@@ -41,6 +44,13 @@ public class GlobalException {
         return build(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
+    @ExceptionHandler(RequestException.class)
+    public ResponseEntity<RestResponse<Object>> handleRequest(
+            RequestException ex
+    ) {
+        return build(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
     // HANDLE VALIDATION
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<RestResponse<Object>> handleValidation(
@@ -76,5 +86,51 @@ public class GlobalException {
         return build(HttpStatus.FORBIDDEN, ex.getMessage());
     }
 
+    @ExceptionHandler({
+            ImageException.class
+    })
+    public ResponseEntity<RestResponse<Object>> handleImage(Exception ex) {
+        return build(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(FeignException.class)
+    public ResponseEntity<RestResponse<Object>> handleFeign(FeignException ex) {
+
+        HttpStatus status = HttpStatus.resolve(ex.status());
+        if (status == null) {
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+        }
+
+        String message = extractMessageFromFeign(ex);
+
+        return build(status, message);
+    }
+
+    private String extractMessageFromFeign(FeignException ex) {
+        try {
+            String body = ex.contentUTF8();
+
+            if (body == null || body.isBlank()) {
+                return "Service error";
+            }
+
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode node = mapper.readTree(body);
+
+            if (node.has("message")) {
+                return node.get("message").asText();
+            }
+
+        } catch (Exception ignored) {}
+
+        return "Service error";
+    }
+
+    @ExceptionHandler(InternalServerException.class)
+    public ResponseEntity<RestResponse<Object>> handleInternal(
+            InternalServerException ex
+    ) {
+        return build(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
+    }
 
 }

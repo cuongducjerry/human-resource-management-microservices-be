@@ -1,9 +1,6 @@
 package com.hrm.employee.controller;
 
-import com.hrm.employee.dto.request.ReqAdminUpdateStatusDTO;
-import com.hrm.employee.dto.request.ReqCreateEmployeeDTO;
-import com.hrm.employee.dto.request.ReqEmployeeSelfUpdateDTO;
-import com.hrm.employee.dto.request.ReqUpdateEmployeeRolesDTO;
+import com.hrm.employee.dto.request.*;
 import com.hrm.employee.dto.response.ResCreateEmployeeDTO;
 import com.hrm.employee.dto.response.ResEmployeeDTO;
 import com.hrm.employee.dto.response.ResultPaginationDTO;
@@ -21,6 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;
 
@@ -89,6 +87,25 @@ public class EmployeeController {
         return ResponseEntity.status(HttpStatus.OK).body(employeeService.updateSelf(req));
     }
 
+    @PutMapping("/me/avatar")
+    @PreAuthorize("hasAuthority('EMPLOYEE_UPDATE_SELF')")
+    @ApiMessage("Update employee avatar")
+    public ResponseEntity<ResEmployeeDTO> updateAvatar(
+            @RequestParam MultipartFile file
+    ) {
+        return ResponseEntity.status(HttpStatus.OK).body(employeeService.updateAvatar(file));
+    }
+
+    @PutMapping("/me/password")
+    @PreAuthorize("hasAuthority('EMPLOYEE_UPDATE_SELF')")
+    @ApiMessage("Change employee password")
+    public ResponseEntity<Void> changePassword(
+            @Valid @RequestBody ReqChangePasswordDTO req) {
+
+        employeeService.changePassword(req);
+        return ResponseEntity.status(HttpStatus.OK).body(null);
+    }
+
     // ================= DELETE =================
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('EMPLOYEE_DELETE')")
@@ -130,6 +147,14 @@ public class EmployeeController {
 
         employeeService.updateRoles(id, req.getRoles());
         return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/{id}/confirm")
+    @PreAuthorize("hasAuthority('EMPLOYEE_CONFIRM')")
+    @ApiMessage("Confirm probation employee")
+    public ResponseEntity<ResEmployeeDTO> confirmEmployee(@PathVariable UUID id) {
+
+        return ResponseEntity.ok(employeeService.confirmEmployee(id));
     }
 
 }
