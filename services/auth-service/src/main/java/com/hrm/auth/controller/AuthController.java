@@ -147,4 +147,15 @@ public class AuthController {
         return ResponseEntity.ok(authService.getUserRoles(id));
     }
 
+    @PutMapping("/users/{id}/roles")
+    @ApiMessage("Update user roles")
+    public ResponseEntity<Void> updateUserRoles(
+            @PathVariable String id,
+            @RequestBody List<String> roles
+    ) {
+
+        authService.updateUserRoles(id, roles);
+        return ResponseEntity.ok().build();
+    }
+
 }

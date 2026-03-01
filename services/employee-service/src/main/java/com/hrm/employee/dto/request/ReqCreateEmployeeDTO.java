@@ -1,5 +1,6 @@
 package com.hrm.employee.dto.request;
 
+import com.hrm.employee.util.constant.EmployeeStatus;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -27,4 +28,7 @@ public class ReqCreateEmployeeDTO {
 
     @NotEmpty(message = "Roles must not be empty")
     private List<String> roles;
+
+    @NotNull(message = "Status must not be null")
+    private EmployeeStatus status;
 }

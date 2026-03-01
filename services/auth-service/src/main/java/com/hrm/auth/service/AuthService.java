@@ -255,6 +255,35 @@ public class AuthService {
         }
     }
 
+    public void updateUserRoles(String userId, List<String> newRoles) {
+
+        String adminToken = getAdminAccessToken();
+
+        // Get all current roles
+        List<String> currentRoles = getUserRoles(userId);
+
+        // Only remove BUSINESS roles (prefix ROLE_)
+        List<String> businessRoles = currentRoles.stream()
+                .filter(role -> role.startsWith("ROLE_"))
+                .toList();
+
+        if (!businessRoles.isEmpty()) {
+            removeRealmRoles(userId, businessRoles, adminToken);
+        }
+
+        // Assign new roles (business roles only)
+        if (newRoles != null && !newRoles.isEmpty()) {
+
+            List<String> filteredNewRoles = newRoles.stream()
+                    .filter(role -> role.startsWith("ROLE_"))
+                    .toList();
+
+            if (!filteredNewRoles.isEmpty()) {
+                assignRealmRoles(userId, filteredNewRoles, adminToken);
+            }
+        }
+    }
+
     public List<String> getUserRoles(String userId) {
 
         String adminToken = getAdminAccessToken();
@@ -322,6 +351,47 @@ public class AuthService {
                 adminBaseUrl + "/users/" + userId,
                 HttpMethod.PUT,
                 request,
+                Void.class
+        );
+    }
+
+    private void removeRealmRoles(String userId,
+                                  List<String> roleNames,
+                                  String adminToken) {
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(adminToken);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        List<Map<String, Object>> rolesToRemove = new ArrayList<>();
+
+        for (String roleName : roleNames) {
+
+            String roleUrl = adminBaseUrl + "/roles/" + roleName;
+
+            ResponseEntity<Map> roleResponse =
+                    restTemplate.exchange(
+                            roleUrl,
+                            HttpMethod.GET,
+                            new HttpEntity<>(headers),
+                            Map.class);
+
+            Map<String, Object> roleBody = roleResponse.getBody();
+
+            Map<String, Object> role = new HashMap<>();
+            role.put("id", roleBody.get("id"));
+            role.put("name", roleBody.get("name"));
+
+            rolesToRemove.add(role);
+        }
+
+        String removeUrl =
+                adminBaseUrl + "/users/" + userId + "/role-mappings/realm";
+
+        restTemplate.exchange(
+                removeUrl,
+                HttpMethod.DELETE,
+                new HttpEntity<>(rolesToRemove, headers),
                 Void.class
         );
     }

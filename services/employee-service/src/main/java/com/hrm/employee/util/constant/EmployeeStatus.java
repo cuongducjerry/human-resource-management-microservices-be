@@ -4,5 +4,6 @@ public enum EmployeeStatus {
     PROBATION,
     ACTIVE,
     ON_LEAVE,
-    RESIGNED
+    TERMINATED,   // The company ceased operations.
+    RESIGNED      // The employee quit on their own accord.
 }

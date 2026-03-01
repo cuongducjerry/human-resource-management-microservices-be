@@ -32,4 +32,10 @@ public interface AuthClient {
     @GetMapping("/api/auth/users/{id}/roles")
     List<String> getUserRoles(@PathVariable("id") String id);
 
+    @PutMapping("/api/auth/users/{id}/roles")
+    void updateUserRoles(
+            @PathVariable("id") String id,
+            @RequestBody List<String> roles
+    );
+
 }

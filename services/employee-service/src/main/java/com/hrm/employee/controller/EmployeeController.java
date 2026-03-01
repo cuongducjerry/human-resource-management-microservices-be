@@ -3,6 +3,7 @@ package com.hrm.employee.controller;
 import com.hrm.employee.dto.request.ReqAdminUpdateStatusDTO;
 import com.hrm.employee.dto.request.ReqCreateEmployeeDTO;
 import com.hrm.employee.dto.request.ReqEmployeeSelfUpdateDTO;
+import com.hrm.employee.dto.request.ReqUpdateEmployeeRolesDTO;
 import com.hrm.employee.dto.response.ResCreateEmployeeDTO;
 import com.hrm.employee.dto.response.ResEmployeeDTO;
 import com.hrm.employee.dto.response.ResultPaginationDTO;
@@ -117,6 +118,18 @@ public class EmployeeController {
         return ResponseEntity.status(HttpStatus.OK).body(
                 employeeService.restoreEmployee(id)
         );
+    }
+
+    // ================= UPDATE ROLES =================
+    @PatchMapping("/{id}/roles")
+    @PreAuthorize("hasAuthority('EMPLOYEE_UPDATE_ROLE')")
+    @ApiMessage("Update employee roles")
+    public ResponseEntity<Void> updateRoles(
+            @PathVariable UUID id,
+            @RequestBody @Valid ReqUpdateEmployeeRolesDTO req) {
+
+        employeeService.updateRoles(id, req.getRoles());
+        return ResponseEntity.ok().build();
     }
 
 }

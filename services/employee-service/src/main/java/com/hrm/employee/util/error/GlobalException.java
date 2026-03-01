@@ -1,6 +1,7 @@
 package com.hrm.employee.util.error;
 
 import com.hrm.employee.entity.RestResponse;
+import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.ForbiddenException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,6 +32,13 @@ public class GlobalException {
             HttpStatus status, String message
     ) {
         return build(status, message, null);
+    }
+
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<RestResponse<Object>> handleBadRequest(
+            BadRequestException ex
+    ) {
+        return build(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
     // HANDLE VALIDATION
