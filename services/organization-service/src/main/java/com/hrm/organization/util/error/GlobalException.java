@@ -1,8 +1,7 @@
 package com.hrm.organization.util.error;
 
 import com.hrm.organization.entity.RestResponse;
-import jakarta.ws.rs.BadRequestException;
-import jakarta.ws.rs.ForbiddenException;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;

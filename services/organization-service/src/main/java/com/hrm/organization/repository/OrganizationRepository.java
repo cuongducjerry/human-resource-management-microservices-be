@@ -11,5 +11,7 @@ public interface OrganizationRepository extends JpaRepository<Organization, UUID
 
     boolean existsByCode(String code);
 
+    boolean existsByCodeAndIdNot(String code, UUID id);
+
     boolean existsByParentId(UUID parentId);
 }

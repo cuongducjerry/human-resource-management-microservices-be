@@ -1,6 +1,8 @@
 package com.hrm.organization.service;
 
+import com.hrm.organization.client.EmployeeClient;
 import com.hrm.organization.dto.request.ReqCreateOrganizationDTO;
+import com.hrm.organization.dto.request.ReqUpdateOrganizationDTO;
 import com.hrm.organization.dto.response.ResOrganizationDTO;
 import com.hrm.organization.dto.response.ResultPaginationDTO;
 import com.hrm.organization.entity.Organization;
@@ -10,8 +12,9 @@ import com.hrm.organization.repository.OrganizationRepository;
 import com.hrm.organization.repository.PositionRepository;
 import com.hrm.organization.specification.OrganizationSpecification;
 import com.hrm.organization.util.constant.OrganizationStatus;
+import com.hrm.organization.util.error.BadRequestException;
 import com.hrm.organization.util.error.IdInvalidException;
-import jakarta.ws.rs.BadRequestException;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -31,6 +34,7 @@ public class OrganizationService {
     private final PositionRepository positionRepository;
     private final OrganizationMapper organizationMapper;
     private final PaginationMapper paginationMapper;
+    private final EmployeeClient employeeClient;
 
     // ================= CREATE =================
     public ResOrganizationDTO create(ReqCreateOrganizationDTO req) {
@@ -92,12 +96,61 @@ public class OrganizationService {
 
         Organization org = findOrganizationById(id);
 
+        if (organizationRepository.existsByParentId(id)) {
+            throw new BadRequestException(
+                    "Cannot delete organization with child organizations");
+        }
+
         if (positionRepository.existsByOrganizationId(id)) {
             throw new BadRequestException(
                     "Cannot delete organization with positions");
         }
 
+        if (employeeClient.existsByOrganization(id)) {
+            throw new BadRequestException(
+                    "Cannot delete organization with employees");
+        }
+
         organizationRepository.delete(org);
+    }
+
+    // ================= UPDATE =================
+    public ResOrganizationDTO update(UUID id, ReqUpdateOrganizationDTO req) {
+
+        Organization org = findOrganizationById(id);
+
+        // Check for duplicate codes (excluding the code itself).
+        if (organizationRepository.existsByCodeAndIdNot(req.getCode(), id)) {
+            throw new BadRequestException("Code already exists");
+        }
+
+        // No self-parent allowed.
+        if (req.getParentId() != null && req.getParentId().equals(id)) {
+            throw new BadRequestException("Organization cannot be its own parent");
+        }
+
+        // If a parent exists, check if it does
+        if (req.getParentId() != null) {
+            Organization parent = findOrganizationById(req.getParentId());
+
+            // Basic loop check: prevents the set parent from being a child of it.
+            if (isCircularDependency(id, parent.getId())) {
+                throw new BadRequestException("Circular parent relationship detected");
+            }
+        }
+
+        // Update field
+        org.setCode(req.getCode());
+        org.setName(req.getName());
+        org.setParentId(req.getParentId());
+
+        if (req.getStatus() != null) {
+            org.setStatus(req.getStatus());
+        }
+
+        organizationRepository.save(org);
+
+        return organizationMapper.convertToResOrganizationDTO(org);
     }
 
     // ================= PRIVATE COMMON METHODS =================
@@ -120,4 +173,28 @@ public class OrganizationService {
             throw new IdInvalidException("Parent organization not found");
         }
     }
+
+    private boolean isCircularDependency(UUID currentId, UUID newParentId) {
+
+        UUID parentId = newParentId;
+
+        while (parentId != null) {
+
+            if (parentId.equals(currentId)) {
+                return true;
+            }
+
+            Organization parent = organizationRepository.findById(parentId)
+                    .orElse(null);
+
+            if (parent == null) {
+                break;
+            }
+
+            parentId = parent.getParentId();
+        }
+
+        return false;
+    }
+
 }

@@ -29,4 +29,8 @@ public interface EmployeeRepository extends JpaRepository<Employee, UUID>, JpaSp
 
     @Query(value = "SELECT * FROM employees WHERE id = :id", nativeQuery = true)
     Optional<Employee> findByIdNative(@Param("id") UUID id);
+
+    boolean existsByOrganizationId(UUID organizationId);
+
+    boolean existsByPositionId(UUID positionId);
 }

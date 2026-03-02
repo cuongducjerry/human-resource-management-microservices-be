@@ -1,6 +1,7 @@
 package com.hrm.organization.controller;
 
 import com.hrm.organization.dto.request.ReqCreateOrganizationDTO;
+import com.hrm.organization.dto.request.ReqUpdateOrganizationDTO;
 import com.hrm.organization.dto.response.ResOrganizationDTO;
 import com.hrm.organization.dto.response.ResultPaginationDTO;
 import com.hrm.organization.service.OrganizationService;
@@ -49,9 +50,21 @@ public class OrganizationController {
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('ORG_VIEW')")
     @ApiMessage("Fetch organization by id")
-    public ResponseEntity<ResOrganizationDTO> getById(@PathVariable UUID id) {
+    public ResponseEntity<ResOrganizationDTO> getOrganizationById(@PathVariable UUID id) {
         return ResponseEntity.status(HttpStatus.OK).body(
                 organizationService.getById(id)
+        );
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('ORG_UPDATE')")
+    @ApiMessage("Update organization")
+    public ResponseEntity<ResOrganizationDTO> update(
+            @PathVariable UUID id,
+            @Valid @RequestBody ReqUpdateOrganizationDTO req) {
+
+        return ResponseEntity.status(HttpStatus.OK).body(
+                organizationService.update(id, req)
         );
     }
 

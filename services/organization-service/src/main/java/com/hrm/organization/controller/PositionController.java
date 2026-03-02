@@ -1,6 +1,7 @@
 package com.hrm.organization.controller;
 
 import com.hrm.organization.dto.request.ReqCreatePositionDTO;
+import com.hrm.organization.dto.request.ReqUpdatePositionDTO;
 import com.hrm.organization.dto.response.ResPositionDTO;
 import com.hrm.organization.dto.response.ResultPaginationDTO;
 import com.hrm.organization.service.PositionService;
@@ -48,11 +49,23 @@ public class PositionController {
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('POSITION_VIEW')")
     @ApiMessage("Fetch position by id")
-    public ResponseEntity<ResPositionDTO> getById(
+    public ResponseEntity<ResPositionDTO> getPositionById(
             @PathVariable UUID id) {
 
         return ResponseEntity.status(HttpStatus.OK).body(
                 positionService.getById(id)
+        );
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('POSITION_UPDATE')")
+    @ApiMessage("Update position")
+    public ResponseEntity<ResPositionDTO> update(
+            @PathVariable UUID id,
+            @Valid @RequestBody ReqUpdatePositionDTO req) {
+
+        return ResponseEntity.status(HttpStatus.OK).body(
+                positionService.update(id, req)
         );
     }
 

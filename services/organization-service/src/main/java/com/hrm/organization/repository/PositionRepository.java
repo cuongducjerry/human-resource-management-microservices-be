@@ -14,4 +14,10 @@ public interface PositionRepository extends JpaRepository<Position, UUID>, JpaSp
     boolean existsByOrganizationId(UUID organizationId);
 
     List<Position> findByOrganizationId(UUID organizationId);
+
+    boolean existsByNameAndOrganizationIdAndIdNot(
+            String name,
+            UUID organizationId,
+            UUID id
+    );
 }

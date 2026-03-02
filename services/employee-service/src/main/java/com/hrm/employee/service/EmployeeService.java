@@ -3,10 +3,9 @@ package com.hrm.employee.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hrm.employee.client.AuthClient;
+import com.hrm.employee.client.OrganizationClient;
 import com.hrm.employee.dto.request.*;
-import com.hrm.employee.dto.response.ResCreateEmployeeDTO;
-import com.hrm.employee.dto.response.ResEmployeeDTO;
-import com.hrm.employee.dto.response.ResultPaginationDTO;
+import com.hrm.employee.dto.response.*;
 import com.hrm.employee.entity.Employee;
 import com.hrm.employee.mapper.EmployeeMapper;
 import com.hrm.employee.mapper.PaginationMapper;
@@ -14,21 +13,17 @@ import com.hrm.employee.repository.EmployeeRepository;
 
 import com.hrm.employee.util.SecurityUtil;
 import com.hrm.employee.util.constant.EmployeeStatus;
+import com.hrm.employee.util.error.BadRequestException;
 import com.hrm.employee.util.error.IdInvalidException;
-import com.hrm.employee.util.error.InternalServerException;
-import com.hrm.employee.util.error.RequestException;
-import feign.FeignException;
-import jakarta.ws.rs.BadRequestException;
+
 import jakarta.ws.rs.ForbiddenException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.Arrays;
@@ -45,6 +40,7 @@ public class EmployeeService {
     private final EmployeeMapper employeeMapper;
     private final PaginationMapper paginationMapper;
     private final CloudinaryService cloudinaryService;
+    private final OrganizationClient organizationClient;
 
     // ================= CREATE =================
     @Transactional
@@ -68,6 +64,45 @@ public class EmployeeService {
             throw new ForbiddenException("No permission");
         }
 
+        // ===== VALIDATE ORGANIZATION =====
+        ResOrganizationDTO organization;
+        try {
+            organization = organizationClient.getOrganizationById(req.getOrganizationId());
+        } catch (Exception e) {
+            throw new IdInvalidException("Organization not found");
+        }
+
+        if (organization == null) {
+            throw new IdInvalidException("Organization not found");
+        }
+
+        // ===== VALIDATE POSITION =====
+        ResPositionDTO position;
+        try {
+            position = organizationClient.getPositionById(req.getPositionId());
+        } catch (Exception e) {
+            throw new IdInvalidException("Position not found");
+        }
+
+        if (position == null) {
+            throw new IdInvalidException("Position not found");
+        }
+
+        // ===== CHECK POSITION BELONGS TO ORG =====
+        if (!position.getOrganizationId().equals(organization.getId())) {
+            throw new BadRequestException("Position does not belong to organization");
+        }
+
+        // ===== VALIDATE MANAGER =====
+        if (req.getManagerId() != null) {
+            Employee manager = employeeRepository.findById(req.getManagerId())
+                    .orElseThrow(() -> new IdInvalidException("Manager not found"));
+
+            if (!manager.getOrganizationId().equals(organization.getId())) {
+                throw new BadRequestException("Manager must belong to same organization");
+            }
+        }
+
         try {
 
             // ===== Split name =====
@@ -86,7 +121,7 @@ public class EmployeeService {
                 throw new BadRequestException("Cannot create final status employee");
             }
 
-            // ===== Create Keycloak =====
+            // ===== CREATE KEYCLOAK USER =====
             ReqCreateKeycloakUserDTO userReq = new ReqCreateKeycloakUserDTO();
             userReq.setUsername(req.getEmail());
             userReq.setEmail(req.getEmail());
@@ -97,7 +132,6 @@ public class EmployeeService {
 
             keycloakUserId = authClient.createUser(userReq);
 
-            // ===== Sync Keycloak =====
             if (status == EmployeeStatus.ACTIVE
                     || status == EmployeeStatus.ON_LEAVE) {
                 authClient.enableUser(keycloakUserId);
@@ -121,7 +155,6 @@ public class EmployeeService {
                     .active(true)
                     .build();
 
-            // ===== Probation auto set =====
             if (status == EmployeeStatus.PROBATION) {
                 employee.setProbationEndDate(LocalDate.now().plusMonths(2));
             }
@@ -131,9 +164,11 @@ public class EmployeeService {
             return employeeMapper.convertToResCreateEmployeeDTO(employee);
 
         } catch (Exception e) {
+
             if (keycloakUserId != null) {
                 authClient.deleteUser(keycloakUserId);
             }
+
             throw e;
         }
     }
@@ -495,4 +530,13 @@ public class EmployeeService {
 
         return String.format("EMP-%d-%06d", year, sequence);
     }
+
+    public boolean existsByOrganization(UUID organizationId) {
+        return employeeRepository.existsByOrganizationId(organizationId);
+    }
+
+    public boolean existsByPosition(UUID positionId) {
+        return employeeRepository.existsByPositionId(positionId);
+    }
+
 }
