@@ -20,7 +20,7 @@ spring:
             - id: organization-service
               uri: lb://organization-service
               predicates:
-                - Path=/api/organization/**
+                - Path=/api/organizations/**, /api/positions/**
 
             - id: employee-service
               uri: lb://employee-service

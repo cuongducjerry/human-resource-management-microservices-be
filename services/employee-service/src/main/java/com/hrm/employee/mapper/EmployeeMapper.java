@@ -35,6 +35,8 @@ public class EmployeeMapper {
 
         dto.setCreatedAt(employee.getCreatedAt());
         dto.setUpdatedAt(employee.getUpdatedAt());
+        dto.setCreatedBy(employee.getCreatedBy());
+        dto.setUpdatedBy(employee.getUpdatedBy());
 
         return dto;
     }

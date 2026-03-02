@@ -18,6 +18,9 @@ public class ContractMapper {
                 .salary(c.getSalary())
                 .description(c.getDescription())
                 .createdAt(c.getCreatedAt())
+                .updatedAt(c.getUpdatedAt())
+                .createdBy(c.getCreatedBy())
+                .updatedBy(c.getUpdatedBy())
                 .build();
     }
 

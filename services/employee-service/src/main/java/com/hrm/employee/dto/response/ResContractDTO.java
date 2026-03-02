@@ -15,6 +15,7 @@ import java.util.UUID;
 @Setter
 @Builder
 public class ResContractDTO {
+
     private UUID id;
     private UUID employeeId;
     private ContractType type;
@@ -23,5 +24,10 @@ public class ResContractDTO {
     private LocalDate endDate;
     private BigDecimal salary;
     private String description;
+
     private Instant createdAt;
+    private Instant updatedAt;
+
+    private String createdBy;
+    private String updatedBy;
 }
