@@ -3,6 +3,7 @@ package com.hrm.organization.controller;
 import com.hrm.organization.dto.request.ReqCreateOrganizationDTO;
 import com.hrm.organization.dto.request.ReqUpdateOrganizationDTO;
 import com.hrm.organization.dto.response.ResOrganizationDTO;
+import com.hrm.organization.dto.response.ResOrganizationTreeDTO;
 import com.hrm.organization.dto.response.ResultPaginationDTO;
 import com.hrm.organization.service.OrganizationService;
 import com.hrm.organization.util.annotation.ApiMessage;
@@ -15,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -32,6 +34,15 @@ public class OrganizationController {
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(organizationService.create(req));
+    }
+
+    @GetMapping("/tree/all")
+    @PreAuthorize("hasAuthority('ORG_TREE')")
+    @ApiMessage("Fetch organization tree")
+    public ResponseEntity<List<ResOrganizationTreeDTO>> getTree() {
+        return ResponseEntity.status(HttpStatus.OK).body(
+                organizationService.getOrganizationTree()
+        );
     }
 
     @GetMapping

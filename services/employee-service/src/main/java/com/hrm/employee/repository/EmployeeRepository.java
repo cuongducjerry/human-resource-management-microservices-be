@@ -33,4 +33,6 @@ public interface EmployeeRepository extends JpaRepository<Employee, UUID>, JpaSp
     boolean existsByOrganizationId(UUID organizationId);
 
     boolean existsByPositionId(UUID positionId);
+
+    boolean existsById(UUID id);
 }

@@ -1,4 +1,4 @@
-package com.hrm.employee.util;
+package com.hrm.leave.util;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -6,8 +6,6 @@ import org.springframework.security.oauth2.jwt.Jwt;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
 
 public class SecurityUtil {
 
@@ -90,3 +88,4 @@ public class SecurityUtil {
     }
 
 }
+

@@ -35,7 +35,7 @@ spring:
             - id: leave-service
               uri: lb://leave-service
               predicates:
-                - Path=/api/leave/**
+                - Path=/api/leaves/**
 
             - id: payroll-service
               uri: lb://payroll-service

@@ -1,5 +1,6 @@
 package com.hrm.employee.controller;
 
+import com.hrm.employee.dto.response.ResEmployeeDTO;
 import com.hrm.employee.repository.EmployeeRepository;
 import com.hrm.employee.service.EmployeeService;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,13 @@ public class EmployeeInternalController {
 
     private final EmployeeService employeeService;
 
+    @GetMapping("/{id}/exists")
+    public ResponseEntity<Boolean> existsById(@PathVariable UUID id) {
+        return ResponseEntity.ok(
+                employeeService.existsById(id)
+        );
+    }
+
     @GetMapping("/exists-by-organization/{orgId}")
     public ResponseEntity<Boolean> existsByOrganization(@PathVariable UUID orgId) {
         return ResponseEntity.ok(
@@ -30,6 +38,11 @@ public class EmployeeInternalController {
         return ResponseEntity.ok(
                 employeeService.existsByPosition(positionId)
         );
+    }
+
+    @GetMapping("/{id}")
+    public ResEmployeeDTO getInternal(@PathVariable UUID id) {
+        return employeeService.getEmployeeById(id);
     }
 
 }

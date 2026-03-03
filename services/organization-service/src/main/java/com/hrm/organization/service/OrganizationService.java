@@ -4,6 +4,7 @@ import com.hrm.organization.client.EmployeeClient;
 import com.hrm.organization.dto.request.ReqCreateOrganizationDTO;
 import com.hrm.organization.dto.request.ReqUpdateOrganizationDTO;
 import com.hrm.organization.dto.response.ResOrganizationDTO;
+import com.hrm.organization.dto.response.ResOrganizationTreeDTO;
 import com.hrm.organization.dto.response.ResultPaginationDTO;
 import com.hrm.organization.entity.Organization;
 import com.hrm.organization.mapper.OrganizationMapper;
@@ -22,8 +23,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -151,6 +151,51 @@ public class OrganizationService {
         organizationRepository.save(org);
 
         return organizationMapper.convertToResOrganizationDTO(org);
+    }
+
+    // ================= TREE =================
+    @Transactional(readOnly = true)
+    public List<ResOrganizationTreeDTO> getOrganizationTree() {
+
+        List<Organization> organizations =
+                organizationRepository.findAllByActiveTrue();
+
+        if (organizations.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // Map entity -> DTO
+        Map<UUID, ResOrganizationTreeDTO> dtoMap = new HashMap<>();
+
+        for (Organization org : organizations) {
+            dtoMap.put(
+                    org.getId(),
+                    ResOrganizationTreeDTO.builder()
+                            .id(org.getId())
+                            .name(org.getName())
+                            .children(new ArrayList<>())
+                            .build()
+            );
+        }
+
+        List<ResOrganizationTreeDTO> roots = new ArrayList<>();
+
+        for (Organization org : organizations) {
+
+            if (org.getParentId() == null) {
+                roots.add(dtoMap.get(org.getId()));
+            } else {
+                ResOrganizationTreeDTO parent =
+                        dtoMap.get(org.getParentId());
+
+                if (parent != null) {
+                    parent.getChildren()
+                            .add(dtoMap.get(org.getId()));
+                }
+            }
+        }
+
+        return roots;
     }
 
     // ================= PRIVATE COMMON METHODS =================

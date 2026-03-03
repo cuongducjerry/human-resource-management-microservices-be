@@ -3,6 +3,7 @@ package com.hrm.employee.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hrm.employee.client.AuthClient;
+import com.hrm.employee.client.LeaveClient;
 import com.hrm.employee.client.OrganizationClient;
 import com.hrm.employee.dto.request.*;
 import com.hrm.employee.dto.response.*;
@@ -41,6 +42,7 @@ public class EmployeeService {
     private final PaginationMapper paginationMapper;
     private final CloudinaryService cloudinaryService;
     private final OrganizationClient organizationClient;
+    private final LeaveClient leaveClient;
 
     // ================= CREATE =================
     @Transactional
@@ -160,6 +162,8 @@ public class EmployeeService {
             }
 
             employeeRepository.save(employee);
+
+            leaveClient.initLeaveBalance(employee.getId());
 
             return employeeMapper.convertToResCreateEmployeeDTO(employee);
 
@@ -437,6 +441,11 @@ public class EmployeeService {
         authClient.enableUser(employee.getKeycloakUserId());
 
         return employeeMapper.convertToResEmployeeDTO(employee);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean existsById(UUID id) {
+        return employeeRepository.existsById(id);
     }
 
     // ================= VALIDATE STATUS =================
