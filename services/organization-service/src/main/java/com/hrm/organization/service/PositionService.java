@@ -111,7 +111,10 @@ public class PositionService {
     // ================= GET BY ID =================
     @Transactional(readOnly = true)
     public ResPositionDTO getById(UUID id) {
-        return positionMapper.convertToResPositionDTO(findPositionById(id));
+        Position p = findPositionById(id);
+
+        ResPositionDTO dto = positionMapper.convertToResPositionDTO(p);
+        return positionMapper.convertToResPositionDTO(p);
     }
 
     // ================= DELETE =================

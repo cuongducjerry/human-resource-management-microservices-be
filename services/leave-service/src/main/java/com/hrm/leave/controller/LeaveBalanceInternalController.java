@@ -19,11 +19,7 @@ public class LeaveBalanceInternalController {
     private final LeaveService leaveService;
 
     @PostMapping("/init/{employeeId}")
-    public ResponseEntity<Void> initLeaveBalance(
-            @PathVariable UUID employeeId) {
-
+    public void initLeaveBalance(@PathVariable UUID employeeId) {
         leaveService.initLeaveBalance(employeeId);
-
-        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 }

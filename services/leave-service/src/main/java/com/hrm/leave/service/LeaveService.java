@@ -3,10 +3,13 @@ package com.hrm.leave.service;
 import com.hrm.leave.client.EmployeeClient;
 import com.hrm.leave.dto.request.ReqCreateLeaveRequestDTO;
 import com.hrm.leave.dto.response.ResEmployeeDTO;
+import com.hrm.leave.dto.response.ResLeaveBalanceDTO;
 import com.hrm.leave.dto.response.ResLeaveRequestDTO;
+import com.hrm.leave.dto.response.ResultPaginationDTO;
 import com.hrm.leave.entity.LeaveBalance;
 import com.hrm.leave.entity.LeaveRequest;
 import com.hrm.leave.mapper.LeaveMapper;
+import com.hrm.leave.mapper.PaginationMapper;
 import com.hrm.leave.repository.LeaveBalanceRepository;
 import com.hrm.leave.repository.LeaveRequestRepository;
 import com.hrm.leave.util.SecurityUtil;
@@ -16,6 +19,9 @@ import com.hrm.leave.util.constant.LeaveType;
 import com.hrm.leave.util.error.BadRequestException;
 import com.hrm.leave.util.error.IdInvalidException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +40,7 @@ public class LeaveService {
     private final LeaveBalanceRepository leaveBalanceRepository;
     private final EmployeeClient employeeClient;
     private final LeaveMapper leaveMapper;
+    private final PaginationMapper paginationMapper;
 
     // ================= CREATE =================
     public ResLeaveRequestDTO create(ReqCreateLeaveRequestDTO req) {
@@ -141,12 +148,60 @@ public class LeaveService {
         leaveRequestRepository.save(leave);
     }
 
+    // ================= LIST LEAVE REQUEST =================
+    public ResultPaginationDTO handleListLeaveRequest(
+            Specification<LeaveRequest> spec,
+            Pageable pageable) {
+
+        Page<LeaveRequest> page =
+                leaveRequestRepository.findAll(spec, pageable);
+
+        int pageNumber = pageable.getPageNumber() + 1;
+        int pageSize = pageable.getPageSize();
+        int totalPages = page.getTotalPages();
+        long totalElements = page.getTotalElements();
+
+        List<ResLeaveRequestDTO> list = page.getContent()
+                .stream()
+                .map(leaveMapper::toDTO)
+                .toList();
+
+        return paginationMapper.convertToResultPaginationDTO(
+                pageNumber, pageSize, totalPages, totalElements, list);
+    }
+
+    public List<ResLeaveBalanceDTO> getBalanceByEmployee(UUID employeeId) {
+
+        List<LeaveBalance> list =
+                leaveBalanceRepository
+                        .findByEmployeeIdAndYear(
+                                employeeId,
+                                Year.now().getValue()
+                        );
+
+        return list.stream()
+                .map(balance -> {
+                    ResLeaveBalanceDTO dto =
+                            leaveMapper.toBalanceDTO(balance);
+
+                    dto.setRemainingDays(
+                            balance.getTotalDaysPerYear()
+                                    - balance.getUsedDays());
+
+                    return dto;
+                })
+                .toList();
+    }
+
     public void initLeaveBalance(UUID employeeId) {
 
         int year = Year.now().getValue();
 
-        ResEmployeeDTO employee =
-                employeeClient.getInternal(employeeId);
+        ResEmployeeDTO employee = employeeClient.getInternal(employeeId);
+
+        System.out.println("============================== EMPLOYEE ==============================");
+        System.out.println(employee);
+        System.out.println("=======================================================================");
 
         for (LeaveType type : LeaveType.values()) {
 

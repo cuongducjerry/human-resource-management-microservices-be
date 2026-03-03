@@ -18,7 +18,7 @@ public class PositionInternalController {
     private final PositionService positionService;
 
     @GetMapping("/{id}")
-    public ResPositionDTO getById(@PathVariable UUID id) {
+    public ResPositionDTO getPositionById(@PathVariable UUID id) {
         return positionService.getById(id);
     }
 }

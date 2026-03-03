@@ -5,6 +5,7 @@ import com.hrm.leave.util.constant.LeaveType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -19,4 +20,10 @@ public interface LeaveBalanceRepository
     );
 
     boolean existsByEmployeeIdAndLeaveTypeAndYear(UUID employeeId, LeaveType type , int year);
+
+    // ================= FIND BY EMPLOYEE + YEAR =================
+    List<LeaveBalance> findByEmployeeIdAndYear(
+            UUID employeeId,
+            Integer year
+    );
 }

@@ -1,5 +1,7 @@
 package com.hrm.organization.util.format;
 
+import com.hrm.organization.dto.response.ResOrganizationDTO;
+import com.hrm.organization.dto.response.ResPositionDTO;
 import com.hrm.organization.entity.RestResponse;
 import com.hrm.organization.util.annotation.ApiMessage;
 import jakarta.servlet.http.HttpServletResponse;
@@ -11,6 +13,8 @@ import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.http.server.ServletServerHttpResponse;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
+
+import java.io.InputStream;
 
 @ControllerAdvice
 public class FormatRestResponse implements ResponseBodyAdvice<Object> {
@@ -34,7 +38,11 @@ public class FormatRestResponse implements ResponseBodyAdvice<Object> {
         RestResponse<Object> res = new RestResponse<Object>();
         res.setStatusCode(status);
 
-        if (body instanceof String || body instanceof Resource) {
+        if (body instanceof String
+                || body instanceof Resource
+                || body instanceof ResOrganizationDTO
+                || body instanceof ResPositionDTO
+        ) {
             return body;
         }
 

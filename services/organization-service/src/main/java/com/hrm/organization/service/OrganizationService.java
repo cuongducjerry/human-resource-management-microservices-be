@@ -86,9 +86,8 @@ public class OrganizationService {
     // ================= GET BY ID =================
     @Transactional(readOnly = true)
     public ResOrganizationDTO getById(UUID id) {
-        return organizationMapper.convertToResOrganizationDTO(
-                findOrganizationById(id)
-        );
+        Organization org = findOrganizationById(id);
+        return organizationMapper.convertToResOrganizationDTO(org);
     }
 
     // ================= DELETE =================

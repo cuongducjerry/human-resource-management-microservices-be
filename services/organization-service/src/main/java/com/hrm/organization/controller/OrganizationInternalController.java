@@ -18,7 +18,7 @@ public class OrganizationInternalController {
     private final OrganizationService organizationService;
 
     @GetMapping("/{id}")
-    public ResOrganizationDTO getById(@PathVariable UUID id) {
+    public ResOrganizationDTO getOrganizationById(@PathVariable UUID id) {
         return organizationService.getById(id);
     }
 }

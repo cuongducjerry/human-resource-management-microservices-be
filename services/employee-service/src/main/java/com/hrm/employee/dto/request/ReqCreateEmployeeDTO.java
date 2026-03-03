@@ -1,6 +1,7 @@
 package com.hrm.employee.dto.request;
 
 import com.hrm.employee.util.constant.EmployeeStatus;
+import com.hrm.employee.util.constant.Gender;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -25,6 +26,9 @@ public class ReqCreateEmployeeDTO {
 
     @NotNull(message = "Position ID must not be null")
     private UUID positionId;
+
+    @NotNull(message = "Gender must not be null")
+    private Gender gender;
 
     private UUID managerId;
 

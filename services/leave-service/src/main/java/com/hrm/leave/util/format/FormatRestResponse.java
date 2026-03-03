@@ -1,5 +1,6 @@
 package com.hrm.leave.util.format;
 
+import com.hrm.leave.dto.response.ResEmployeeDTO;
 import com.hrm.leave.entity.RestResponse;
 import com.hrm.leave.util.annotation.ApiMessage;
 import jakarta.servlet.http.HttpServletResponse;
@@ -34,7 +35,9 @@ public class FormatRestResponse implements ResponseBodyAdvice<Object> {
         RestResponse<Object> res = new RestResponse<Object>();
         res.setStatusCode(status);
 
-        if (body instanceof String || body instanceof Resource) {
+        if (body instanceof String
+                || body instanceof Resource
+                || body instanceof ResEmployeeDTO) {
             return body;
         }
 

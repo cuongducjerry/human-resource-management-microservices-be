@@ -8,6 +8,7 @@ import com.hrm.employee.client.OrganizationClient;
 import com.hrm.employee.dto.request.*;
 import com.hrm.employee.dto.response.*;
 import com.hrm.employee.entity.Employee;
+import com.hrm.employee.event.EmployeeCreatedEvent;
 import com.hrm.employee.mapper.EmployeeMapper;
 import com.hrm.employee.mapper.PaginationMapper;
 import com.hrm.employee.repository.EmployeeRepository;
@@ -19,6 +20,7 @@ import com.hrm.employee.util.error.IdInvalidException;
 
 import jakarta.ws.rs.ForbiddenException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -43,6 +45,7 @@ public class EmployeeService {
     private final CloudinaryService cloudinaryService;
     private final OrganizationClient organizationClient;
     private final LeaveClient leaveClient;
+    private final ApplicationEventPublisher eventPublisher;
 
     // ================= CREATE =================
     @Transactional
@@ -152,6 +155,7 @@ public class EmployeeService {
                     .organizationId(req.getOrganizationId())
                     .positionId(req.getPositionId())
                     .managerId(req.getManagerId())
+                    .gender(req.getGender())
                     .hireDate(LocalDate.now())
                     .status(status)
                     .active(true)
@@ -163,7 +167,9 @@ public class EmployeeService {
 
             employeeRepository.save(employee);
 
-            leaveClient.initLeaveBalance(employee.getId());
+            eventPublisher.publishEvent(
+                    new EmployeeCreatedEvent(employee.getId())
+            );
 
             return employeeMapper.convertToResCreateEmployeeDTO(employee);
 

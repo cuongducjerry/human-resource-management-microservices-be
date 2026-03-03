@@ -1,5 +1,8 @@
 package com.hrm.employee.util.format;
 
+import com.hrm.employee.dto.response.ResEmployeeDTO;
+import com.hrm.employee.dto.response.ResOrganizationDTO;
+import com.hrm.employee.dto.response.ResPositionDTO;
 import com.hrm.employee.entity.RestResponse;
 import com.hrm.employee.util.annotation.ApiMessage;
 import jakarta.servlet.http.HttpServletResponse;
@@ -34,7 +37,11 @@ public class FormatRestResponse implements ResponseBodyAdvice<Object> {
         RestResponse<Object> res = new RestResponse<Object>();
         res.setStatusCode(status);
 
-        if (body instanceof String || body instanceof Resource || body instanceof Boolean) {
+        if (body instanceof String
+                || body instanceof Resource
+                || body instanceof Boolean
+                || body instanceof ResEmployeeDTO
+        ) {
             return body;
         }
 
