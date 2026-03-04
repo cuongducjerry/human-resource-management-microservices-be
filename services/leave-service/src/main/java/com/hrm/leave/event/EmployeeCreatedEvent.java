@@ -1,4 +1,4 @@
-package com.hrm.employee.event;
+package com.hrm.leave.event;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

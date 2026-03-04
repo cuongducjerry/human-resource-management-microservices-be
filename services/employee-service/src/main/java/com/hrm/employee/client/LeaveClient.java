@@ -7,10 +7,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 
 import java.util.UUID;
 
-@FeignClient(name = "leave-service", configuration = FeignConfig.class)
-public interface LeaveClient {
-
-    @PostMapping("/api/internal/leave-balances/init/{employeeId}")
-    void initLeaveBalance(@PathVariable UUID employeeId);
-
-}
+//@FeignClient(name = "leave-service", configuration = FeignConfig.class)
+//public interface LeaveClient {
+//
+//    @PostMapping("/api/internal/leave-balances/init/{employeeId}")
+//    void initLeaveBalance(@PathVariable UUID employeeId);
+//
+//}

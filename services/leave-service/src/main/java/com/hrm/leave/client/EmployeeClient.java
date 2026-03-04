@@ -14,7 +14,7 @@ public interface EmployeeClient {
     @GetMapping("/api/internal/employees/{id}/exists")
     Boolean existsById(@PathVariable UUID id);
 
-    @GetMapping("/api/internal/employees/{id}")
+    @GetMapping("/api/internal/employees/{id}")  
     ResEmployeeDTO getInternal(@PathVariable UUID id);
 
 }

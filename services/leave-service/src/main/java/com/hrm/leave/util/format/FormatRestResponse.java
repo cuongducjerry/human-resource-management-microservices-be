@@ -2,6 +2,7 @@ package com.hrm.leave.util.format;
 
 import com.hrm.leave.dto.response.ResEmployeeDTO;
 import com.hrm.leave.entity.RestResponse;
+import com.hrm.leave.event.EmployeeCreatedEvent;
 import com.hrm.leave.util.annotation.ApiMessage;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.core.MethodParameter;
@@ -37,7 +38,8 @@ public class FormatRestResponse implements ResponseBodyAdvice<Object> {
 
         if (body instanceof String
                 || body instanceof Resource
-                || body instanceof ResEmployeeDTO) {
+                || body instanceof ResEmployeeDTO
+        ) {
             return body;
         }
 

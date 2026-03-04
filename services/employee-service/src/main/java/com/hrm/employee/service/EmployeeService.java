@@ -3,7 +3,6 @@ package com.hrm.employee.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hrm.employee.client.AuthClient;
-import com.hrm.employee.client.LeaveClient;
 import com.hrm.employee.client.OrganizationClient;
 import com.hrm.employee.dto.request.*;
 import com.hrm.employee.dto.response.*;
@@ -24,8 +23,12 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationAdapter;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
@@ -44,7 +47,7 @@ public class EmployeeService {
     private final PaginationMapper paginationMapper;
     private final CloudinaryService cloudinaryService;
     private final OrganizationClient organizationClient;
-    private final LeaveClient leaveClient;
+    // private final LeaveClient leaveClient;
     private final ApplicationEventPublisher eventPublisher;
 
     // ================= CREATE =================
@@ -167,9 +170,20 @@ public class EmployeeService {
 
             employeeRepository.save(employee);
 
-            eventPublisher.publishEvent(
-                    new EmployeeCreatedEvent(employee.getId())
-            );
+//            kafkaTemplate.send("employee-created-topic", employee.getId().toString())
+//                    .whenComplete((result, ex) -> {
+//                        if (ex == null) {
+//                            System.out.println("Sent OK: " + employee.getId().toString());
+//                        } else {
+//                            System.err.println("Send FAILED: ");
+//                            ex.printStackTrace();
+//                        }
+//                    });
+
+
+//            kafkaTemplate.send("employee-created-topic", employee.getId().toString());
+
+            eventPublisher.publishEvent(employee.getId().toString());
 
             return employeeMapper.convertToResCreateEmployeeDTO(employee);
 
