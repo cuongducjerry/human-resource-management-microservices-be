@@ -11,15 +11,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
-@RestController
-@RequestMapping("/api/internal/leave-balances")
-@RequiredArgsConstructor
-public class LeaveBalanceInternalController {
-
-    private final LeaveService leaveService;
-
-    @PostMapping("/init/{employeeId}")
-    public void initLeaveBalance(@PathVariable UUID employeeId) {
-        leaveService.initLeaveBalance(employeeId);
-    }
-}
+//@RestController
+//@RequestMapping("/api/internal/leave-balances")
+//@RequiredArgsConstructor
+//public class LeaveBalanceInternalController {
+//
+//    private final LeaveService leaveService;
+//
+//    @PostMapping("/init/{employeeId}")
+//    public void initLeaveBalance(@PathVariable UUID employeeId) {
+//        leaveService.initLeaveBalance(employeeId);
+//    }
+//}

@@ -8,6 +8,7 @@ import com.hrm.leave.dto.response.ResLeaveRequestDTO;
 import com.hrm.leave.dto.response.ResultPaginationDTO;
 import com.hrm.leave.entity.LeaveBalance;
 import com.hrm.leave.entity.LeaveRequest;
+import com.hrm.leave.event.EmployeeCreatedEvent;
 import com.hrm.leave.mapper.LeaveMapper;
 import com.hrm.leave.mapper.PaginationMapper;
 import com.hrm.leave.repository.LeaveBalanceRepository;
@@ -195,11 +196,9 @@ public class LeaveService {
 
 
 
-    public void initLeaveBalance(UUID employeeId) {
+    public void initLeaveBalance(EmployeeCreatedEvent employee) {
 
         int year = Year.now().getValue();
-
-        ResEmployeeDTO employee = employeeClient.getInternal(employeeId);
 
         System.out.println("============================== EMPLOYEE ==============================");
         System.out.println(employee);
@@ -213,7 +212,7 @@ public class LeaveService {
 
             boolean exists = leaveBalanceRepository
                     .existsByEmployeeIdAndLeaveTypeAndYear(
-                            employeeId, type, year
+                            employee.getId(), type, year
                     );
 
             if (exists) continue;
@@ -223,7 +222,7 @@ public class LeaveService {
             if (totalDays == null) continue;
 
             LeaveBalance balance = LeaveBalance.builder()
-                    .employeeId(employeeId)
+                    .employeeId(employee.getId())
                     .leaveType(type)
                     .totalDaysPerYear(totalDays)
                     .usedDays(0)
@@ -235,7 +234,7 @@ public class LeaveService {
     }
 
     private Integer resolveDefaultDays(LeaveType type,
-                                       ResEmployeeDTO employee) {
+                                       EmployeeCreatedEvent employee) {
 
         switch (type) {
 

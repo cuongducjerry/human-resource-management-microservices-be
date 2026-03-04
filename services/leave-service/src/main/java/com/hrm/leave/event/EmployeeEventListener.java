@@ -1,5 +1,6 @@
 package com.hrm.leave.event;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hrm.leave.service.LeaveService;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -13,17 +14,16 @@ import java.util.UUID;
 public class EmployeeEventListener {
 
     private final LeaveService leaveService;
-
-    @PostConstruct
-    public void init() {
-        System.out.println("Kafka listener bean loaded");
-    }
+    private final ObjectMapper objectMapper;
 
     @KafkaListener(topics = "employee-created-topic", groupId = "leave-group")
-    public void handle(String employeeId) {
+    public void handle(String message) throws Exception {
 
-        System.out.println("Received: " + employeeId);
+        System.out.println("RAW JSON: " + message);
 
-        leaveService.initLeaveBalance(UUID.fromString(employeeId));
+        EmployeeCreatedEvent event =
+                objectMapper.readValue(message, EmployeeCreatedEvent.class);
+
+        leaveService.initLeaveBalance(event);
     }
 }

@@ -183,7 +183,15 @@ public class EmployeeService {
 
 //            kafkaTemplate.send("employee-created-topic", employee.getId().toString());
 
-            eventPublisher.publishEvent(employee.getId().toString());
+            eventPublisher.publishEvent(
+                    EmployeeCreatedEvent.builder()
+                            .id(employee.getId())
+                            .fullName(employee.getFullName())
+                            .employeeCode(employee.getEmployeeCode())
+                            .organizationId(employee.getOrganizationId())
+                            .gender(employee.getGender())
+                            .build()
+            );
 
             return employeeMapper.convertToResCreateEmployeeDTO(employee);
 
