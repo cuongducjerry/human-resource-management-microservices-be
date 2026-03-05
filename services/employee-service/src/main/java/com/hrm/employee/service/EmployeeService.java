@@ -65,43 +65,29 @@ public class EmployeeService {
         }
 
         List<String> currentRoles = SecurityUtil.getCurrentUserRoles();
-        boolean isSuperAdmin = currentRoles.contains("ROLE_SUPER_ADMIN");
-        boolean isHrAdmin = currentRoles.contains("ROLE_HR_ADMIN");
-
-        if (!isSuperAdmin && !isHrAdmin) {
+        if (!(currentRoles.contains("ROLE_SUPER_ADMIN")
+                || currentRoles.contains("ROLE_HR_ADMIN"))) {
             throw new ForbiddenException("No permission");
         }
 
         // ===== VALIDATE ORGANIZATION =====
-        ResOrganizationDTO organization;
-        try {
-            organization = organizationClient.getOrganizationById(req.getOrganizationId());
-        } catch (Exception e) {
-            throw new IdInvalidException("Organization not found");
-        }
-
+        ResOrganizationDTO organization =
+                organizationClient.getOrganizationById(req.getOrganizationId());
         if (organization == null) {
             throw new IdInvalidException("Organization not found");
         }
 
         // ===== VALIDATE POSITION =====
-        ResPositionDTO position;
-        try {
-            position = organizationClient.getPositionById(req.getPositionId());
-        } catch (Exception e) {
-            throw new IdInvalidException("Position not found");
-        }
-
+        ResPositionDTO position =
+                organizationClient.getPositionById(req.getPositionId());
         if (position == null) {
             throw new IdInvalidException("Position not found");
         }
 
-        // ===== CHECK POSITION BELONGS TO ORG =====
         if (!position.getOrganizationId().equals(organization.getId())) {
             throw new BadRequestException("Position does not belong to organization");
         }
 
-        // ===== VALIDATE MANAGER =====
         if (req.getManagerId() != null) {
             Employee manager = employeeRepository.findById(req.getManagerId())
                     .orElseThrow(() -> new IdInvalidException("Manager not found"));
@@ -112,6 +98,10 @@ public class EmployeeService {
         }
 
         try {
+
+            // ===== GENERATE EMPLOYEE ID TRƯỚC =====
+            UUID employeeId = UUID.randomUUID();
+            String employeeCode = generateEmployeeCode(employeeId);
 
             // ===== Split name =====
             String[] parts = req.getFullName().trim().split("\\s+");
@@ -129,7 +119,7 @@ public class EmployeeService {
                 throw new BadRequestException("Cannot create final status employee");
             }
 
-            // ===== CREATE KEYCLOAK USER =====
+            // ===== CREATE KEYCLOAK USER  =====
             ReqCreateKeycloakUserDTO userReq = new ReqCreateKeycloakUserDTO();
             userReq.setUsername(req.getEmail());
             userReq.setEmail(req.getEmail());
@@ -137,6 +127,7 @@ public class EmployeeService {
             userReq.setFirstName(firstName);
             userReq.setLastName(lastName);
             userReq.setRoles(req.getRoles());
+            userReq.setEmployeeId(employeeId);
 
             keycloakUserId = authClient.createUser(userReq);
 
@@ -147,10 +138,9 @@ public class EmployeeService {
                 authClient.disableUser(keycloakUserId);
             }
 
-            UUID id = UUID.randomUUID();
-            String employeeCode = generateEmployeeCode(id);
-
+            // ===== BUILD EMPLOYEE =====
             Employee employee = Employee.builder()
+                    .id(employeeId)
                     .keycloakUserId(keycloakUserId)
                     .employeeCode(employeeCode)
                     .fullName(req.getFullName())
@@ -169,19 +159,6 @@ public class EmployeeService {
             }
 
             employeeRepository.save(employee);
-
-//            kafkaTemplate.send("employee-created-topic", employee.getId().toString())
-//                    .whenComplete((result, ex) -> {
-//                        if (ex == null) {
-//                            System.out.println("Sent OK: " + employee.getId().toString());
-//                        } else {
-//                            System.err.println("Send FAILED: ");
-//                            ex.printStackTrace();
-//                        }
-//                    });
-
-
-//            kafkaTemplate.send("employee-created-topic", employee.getId().toString());
 
             eventPublisher.publishEvent(
                     EmployeeCreatedEvent.builder()
@@ -525,6 +502,10 @@ public class EmployeeService {
                         .map(employeeMapper::convertToResEmployeeDTO)
                         .toList()
         );
+    }
+
+    public List<UUID> getAllActiveEmployeeIds() {
+        return employeeRepository.findAllActiveEmployeeIds();
     }
 
     // ================= RESTORE =================

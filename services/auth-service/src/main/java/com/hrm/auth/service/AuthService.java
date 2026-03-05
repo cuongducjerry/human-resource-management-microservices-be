@@ -144,6 +144,13 @@ public class AuthService {
         user.put("lastName",
                 req.getLastName() != null ? req.getLastName() : "User");
 
+        if (req.getEmployeeId() != null) {
+            Map<String, Object> attributes = new HashMap<>();
+            attributes.put("employeeId",
+                    Collections.singletonList(req.getEmployeeId()));
+            user.put("attributes", attributes);
+        }
+
 
         user.put("requiredActions", Collections.emptyList());
 
@@ -545,6 +552,12 @@ public class AuthService {
             String username = jsonNode.get("preferred_username").asText();
             String email = jsonNode.get("email").asText();
 
+            String employeeId = null;
+
+            if (jsonNode.has("employeeId")) {
+                employeeId = jsonNode.get("employeeId").asText();
+            }
+
             List<String> roles = new ArrayList<>();
             JsonNode realmRoles =
                     jsonNode.get("realm_access").get("roles");
@@ -553,7 +566,7 @@ public class AuthService {
                 roles.add(role.asText());
             }
 
-            return new ResLoginDTO.UserAccount(id, username, email, roles);
+            return new ResLoginDTO.UserAccount(id, username, email, roles, employeeId);
 
         } catch (Exception e) {
             throw new RuntimeException("Cannot parse access token");

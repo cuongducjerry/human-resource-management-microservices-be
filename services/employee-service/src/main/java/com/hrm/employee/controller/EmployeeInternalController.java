@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -20,29 +21,28 @@ public class EmployeeInternalController {
     private final EmployeeService employeeService;
 
     @GetMapping("/{id}/exists")
-    public ResponseEntity<Boolean> existsById(@PathVariable UUID id) {
-        return ResponseEntity.ok(
-                employeeService.existsById(id)
-        );
+    public Boolean existsById(@PathVariable UUID id) {
+        return employeeService.existsById(id);
     }
 
     @GetMapping("/exists-by-organization/{orgId}")
-    public ResponseEntity<Boolean> existsByOrganization(@PathVariable UUID orgId) {
-        return ResponseEntity.ok(
-                employeeService.existsByOrganization(orgId)
-        );
+    public Boolean existsByOrganization(@PathVariable UUID orgId) {
+        return employeeService.existsByOrganization(orgId);
     }
 
     @GetMapping("/exists-by-position/{positionId}")
-    public ResponseEntity<Boolean> existsByPosition(@PathVariable UUID positionId) {
-        return ResponseEntity.ok(
-                employeeService.existsByPosition(positionId)
-        );
+    public Boolean existsByPosition(@PathVariable UUID positionId) {
+        return employeeService.existsByPosition(positionId);
     }
 
     @GetMapping("/{id}")
     public ResEmployeeDTO getInternal(@PathVariable UUID id) {
         return employeeService.getEmployeeById(id);
+    }
+
+    @GetMapping("/ids")
+    public List<UUID> getAllActiveEmployeeIds() {
+        return employeeService.getAllActiveEmployeeIds();
     }
 
 }

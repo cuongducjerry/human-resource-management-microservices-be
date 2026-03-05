@@ -87,4 +87,15 @@ public class SecurityUtil {
                 .anyMatch(a -> a.getAuthority().equals(authority));
     }
 
+    // ===============================
+    // GET EMPLOYEE ID (custom claim)
+    // ===============================
+    public static String getCurrentEmployeeId() {
+
+        Jwt jwt = getCurrentJwt();
+        if (jwt == null) return null;
+
+        return jwt.getClaimAsString("employeeId");
+    }
+
 }
