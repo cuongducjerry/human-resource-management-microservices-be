@@ -10,13 +10,30 @@ import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.http.server.ServletServerHttpResponse;
 import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
+
+import java.util.Optional;
 
 @ControllerAdvice
 public class FormatRestResponse implements ResponseBodyAdvice<Object> {
 
     @Override
     public boolean supports(MethodParameter returnType, Class converterType) {
+
+        String path = Optional.ofNullable(
+                ((ServletRequestAttributes)
+                        RequestContextHolder.getRequestAttributes())
+                        .getRequest()
+                        .getRequestURI()
+        ).orElse("");
+
+        //  Cancel WRAP internal API
+        if (path.startsWith("/api/internal/")) {
+            return false;
+        }
+
         return true;
     }
 
@@ -28,29 +45,29 @@ public class FormatRestResponse implements ResponseBodyAdvice<Object> {
             Class selectedConverterType,
             ServerHttpRequest request,
             ServerHttpResponse response) {
-        HttpServletResponse servletResponse = ((ServletServerHttpResponse) response).getServletResponse();
+
+        HttpServletResponse servletResponse =
+                ((ServletServerHttpResponse) response).getServletResponse();
         int status = servletResponse.getStatus();
 
-        RestResponse<Object> res = new RestResponse<Object>();
+        RestResponse<Object> res = new RestResponse<>();
         res.setStatusCode(status);
 
         if (body instanceof String
                 || body instanceof Resource
-        ) {
+                || body instanceof Boolean) {
             return body;
         }
 
         if (status >= 400) {
-            // case error
             return body;
-        } else {
-            // case success
-            res.setData(body);
-            ApiMessage message = returnType.getMethodAnnotation(ApiMessage.class);
-            res.setMessage(message != null ? message.value() : "CALL API SUCCESS");
         }
+
+        res.setData(body);
+
+        ApiMessage message = returnType.getMethodAnnotation(ApiMessage.class);
+        res.setMessage(message != null ? message.value() : "CALL API SUCCESS");
 
         return res;
     }
-
 }

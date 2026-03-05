@@ -35,6 +35,8 @@ public class ResEmployeeDTO {
 
     private UUID managerId;
 
+    private UUID shiftId;
+
     private String avatarUrl;
 
     private LocalDate hireDate;

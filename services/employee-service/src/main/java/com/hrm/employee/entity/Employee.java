@@ -69,6 +69,10 @@ public class Employee {
 
     private UUID managerId;
 
+    // ===== Work Shift Reference =====
+    @Column(name = "shift_id")
+    private UUID shiftId;
+
     // ===== Lifecycle Tracking =====
     private LocalDate probationEndDate;
 

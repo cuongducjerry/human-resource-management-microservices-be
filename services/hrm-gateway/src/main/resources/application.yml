@@ -30,7 +30,7 @@ spring:
             - id: attendance-service
               uri: lb://attendance-service
               predicates:
-                - Path=/api/attendances/**
+                - Path=/api/attendances/**, /api/work-shifts/**
 
             - id: leave-service
               uri: lb://leave-service

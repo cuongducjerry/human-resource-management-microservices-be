@@ -1,6 +1,7 @@
-package com.hrm.leave.dto.response;
+package com.hrm.attendance.dto.response;
 
-import com.hrm.leave.util.constant.Gender;
+import com.hrm.attendance.util.constant.EmployeeStatus;
+import com.hrm.attendance.util.constant.Gender;
 import lombok.*;
 
 import java.time.Instant;
@@ -12,7 +13,6 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString
 public class ResEmployeeDTO {
 
     private UUID id;
@@ -27,7 +27,7 @@ public class ResEmployeeDTO {
 
     private Gender gender;
 
-    private String status;
+    private EmployeeStatus status;
 
     private UUID organizationId;
 

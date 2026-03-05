@@ -26,4 +26,6 @@ public interface AttendanceRepository extends JpaRepository<Attendance, UUID>, J
             LocalDate end,
             Pageable pageable
     );
+
+    boolean existsByShiftId(UUID shiftId);
 }

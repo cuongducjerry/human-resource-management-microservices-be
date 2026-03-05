@@ -1,8 +1,10 @@
 package com.hrm.attendance.service;
 
+import com.hrm.attendance.client.EmployeeClient;
 import com.hrm.attendance.dto.response.ResAttendanceDTO;
 import com.hrm.attendance.dto.response.ResultPaginationDTO;
 import com.hrm.attendance.entity.Attendance;
+import com.hrm.attendance.entity.WorkShift;
 import com.hrm.attendance.mapper.AttendanceMapper;
 import com.hrm.attendance.mapper.PaginationMapper;
 import com.hrm.attendance.repository.AttendanceRepository;
@@ -32,11 +34,8 @@ public class AttendanceService {
     private final AttendanceRepository attendanceRepository;
     private final AttendanceMapper attendanceMapper;
     private final PaginationMapper paginationMapper;
-
-    private static final LocalTime SHIFT_START = LocalTime.of(8, 0);
-    private static final LocalTime SHIFT_END = LocalTime.of(17, 0);
-    private static final int ALLOW_LATE_MINUTES = 15;
-    private static final double STANDARD_WORK_HOURS = 8.0;
+    private final WorkShiftService workShiftService;
+    private final EmployeeClient employeeClient;
 
     // ===== CHECK IN =====
     @Transactional
@@ -58,17 +57,24 @@ public class AttendanceService {
             throw new BadRequestException("Already checked in today");
         }
 
+        UUID shiftId = employeeClient.getInternal(employeeId).getShiftId();
+
+        WorkShift shift = workShiftService.getEntityById(shiftId);
+
         LocalDateTime now = LocalDateTime.now();
         LocalTime checkInTime = now.toLocalTime();
 
         AttendanceStatus status = AttendanceStatus.PRESENT;
 
-        if (checkInTime.isAfter(SHIFT_START.plusMinutes(ALLOW_LATE_MINUTES))) {
+        if (checkInTime.isAfter(
+                shift.getStartTime()
+                        .plusMinutes(shift.getAllowLateMinutes()))) {
             status = AttendanceStatus.LATE;
         }
 
         Attendance attendance = Attendance.builder()
                 .employeeId(employeeId)
+                .shiftId(shiftId)  // snapshot
                 .workDate(today)
                 .checkInTime(now)
                 .status(status)
@@ -101,9 +107,12 @@ public class AttendanceService {
             throw new BadRequestException("Already checked out");
         }
 
+        WorkShift shift = workShiftService.getEntityById(attendance.getShiftId());
+
         LocalDateTime checkOut = LocalDateTime.now();
         attendance.setCheckOutTime(checkOut);
 
+        // ===== CALCULATE TOTAL WORKING HOURS =====
         double hours = Duration.between(
                 attendance.getCheckInTime(),
                 checkOut
@@ -111,12 +120,18 @@ public class AttendanceService {
 
         attendance.setTotalHours(hours);
 
-        double overtime = Math.max(0, hours - STANDARD_WORK_HOURS);
+        // ===== CALCULATE OVERTIME =====
+        double overtime = Math.max(
+                0,
+                hours - shift.getStandardWorkHours()
+        );
+
         attendance.setOvertimeHours(overtime);
 
-        LocalTime checkOutTime = checkOut.toLocalTime();
+        // ===== CHECK EARLY LEAVE =====
+        if (checkOut.toLocalTime()
+                .isBefore(shift.getEndTime())) {
 
-        if (checkOutTime.isBefore(SHIFT_END)) {
             attendance.setStatus(AttendanceStatus.EARLY_LEAVE);
         }
 

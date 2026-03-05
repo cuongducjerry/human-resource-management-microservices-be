@@ -2,7 +2,6 @@ package com.hrm.leave.service;
 
 import com.hrm.leave.client.EmployeeClient;
 import com.hrm.leave.dto.request.ReqCreateLeaveRequestDTO;
-import com.hrm.leave.dto.response.ResEmployeeDTO;
 import com.hrm.leave.dto.response.ResLeaveBalanceDTO;
 import com.hrm.leave.dto.response.ResLeaveRequestDTO;
 import com.hrm.leave.dto.response.ResultPaginationDTO;

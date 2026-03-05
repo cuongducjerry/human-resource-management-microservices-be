@@ -9,6 +9,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -25,6 +26,11 @@ public class AttendanceScheduler {
     public void markAbsentEmployees() {
 
         LocalDate today = LocalDate.now();
+
+        DayOfWeek dayOfWeek = today.getDayOfWeek();
+        if (dayOfWeek == DayOfWeek.SUNDAY) {
+            return;
+        }
 
         List<UUID> allEmployees = employeeClient.getAllActiveEmployeeIds();
 

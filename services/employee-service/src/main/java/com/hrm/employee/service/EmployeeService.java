@@ -2,6 +2,7 @@ package com.hrm.employee.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hrm.employee.client.AttendanceClient;
 import com.hrm.employee.client.AuthClient;
 import com.hrm.employee.client.OrganizationClient;
 import com.hrm.employee.dto.request.*;
@@ -17,6 +18,7 @@ import com.hrm.employee.util.constant.EmployeeStatus;
 import com.hrm.employee.util.error.BadRequestException;
 import com.hrm.employee.util.error.IdInvalidException;
 
+import feign.FeignException;
 import jakarta.ws.rs.ForbiddenException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -47,6 +49,7 @@ public class EmployeeService {
     private final PaginationMapper paginationMapper;
     private final CloudinaryService cloudinaryService;
     private final OrganizationClient organizationClient;
+    private final AttendanceClient attendanceClient;
     // private final LeaveClient leaveClient;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -86,6 +89,21 @@ public class EmployeeService {
 
         if (!position.getOrganizationId().equals(organization.getId())) {
             throw new BadRequestException("Position does not belong to organization");
+        }
+
+        // ===== VALIDATE SHIFT =====
+        if (req.getShiftId() != null) {
+            try {
+                ResWorkShiftDTO shift =
+                        attendanceClient.getWorkShiftById(req.getShiftId());
+
+                if (shift == null) {
+                    throw new IdInvalidException("Work shift not found");
+                }
+
+            } catch (FeignException.NotFound e) {
+                throw new IdInvalidException("Work shift not found");
+            }
         }
 
         if (req.getManagerId() != null) {
@@ -148,6 +166,7 @@ public class EmployeeService {
                     .organizationId(req.getOrganizationId())
                     .positionId(req.getPositionId())
                     .managerId(req.getManagerId())
+                    .shiftId(req.getShiftId())
                     .gender(req.getGender())
                     .hireDate(LocalDate.now())
                     .status(status)

@@ -23,6 +23,7 @@ public class EmployeeMapper {
         dto.setOrganizationId(employee.getOrganizationId());
         dto.setPositionId(employee.getPositionId());
         dto.setManagerId(employee.getManagerId());
+        dto.setShiftId(employee.getShiftId());
         dto.setAvatarUrl(employee.getAvatarUrl());
 
         dto.setHireDate(employee.getHireDate());

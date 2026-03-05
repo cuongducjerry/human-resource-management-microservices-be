@@ -15,11 +15,7 @@ import java.time.LocalTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "work_shifts",
-        indexes = {
-                @Index(name = "idx_work_shift_org", columnList = "organization_id")
-        }
-)
+@Table(name = "work_shifts")
 @SQLDelete(sql = "UPDATE work_shifts SET active = false WHERE id = ?")
 @Where(clause = "active = true")
 @EntityListeners(AuditingEntityListener.class)
@@ -34,17 +30,16 @@ public class WorkShift {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(name = "organization_id", nullable = false)
-    private UUID organizationId;
+    private String name;
 
-    @Column(nullable = false)
     private LocalTime startTime;
 
-    @Column(nullable = false)
     private LocalTime endTime;
 
-    @Column(nullable = false)
-    private Double standardHours;
+    private Integer allowLateMinutes;
+
+    private Double standardWorkHours;
+
 
     // ===== Soft delete =====
     @Builder.Default

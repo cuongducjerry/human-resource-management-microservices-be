@@ -32,6 +32,8 @@ public class ReqCreateEmployeeDTO {
 
     private UUID managerId;
 
+    private UUID shiftId;
+
     @NotEmpty(message = "Roles must not be empty")
     private List<String> roles;
 

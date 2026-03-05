@@ -50,6 +50,8 @@ public class Attendance {
 
     private Double overtimeHours;
 
+    private UUID shiftId;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private AttendanceStatus status;

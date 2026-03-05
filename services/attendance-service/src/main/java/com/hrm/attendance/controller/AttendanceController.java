@@ -1,12 +1,9 @@
 package com.hrm.attendance.controller;
 
-import com.hrm.attendance.dto.request.ReqCheckInDTO;
-import com.hrm.attendance.dto.request.ReqCheckOutDTO;
 import com.hrm.attendance.dto.response.ResAttendanceDTO;
 import com.hrm.attendance.dto.response.ResultPaginationDTO;
 import com.hrm.attendance.service.AttendanceService;
 import com.hrm.attendance.util.annotation.ApiMessage;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
