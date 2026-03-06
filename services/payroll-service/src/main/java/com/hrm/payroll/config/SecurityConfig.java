@@ -1,4 +1,4 @@
-package com.hrm.employee.config;
+package com.hrm.payroll.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,7 +21,7 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/employees/**", "/api/contracts/**").authenticated()
+                        .requestMatchers("/api/payrolls/**", "/api/attendance-summary/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 ->

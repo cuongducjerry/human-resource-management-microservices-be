@@ -117,7 +117,7 @@ public class EmployeeService {
 
         try {
 
-            // ===== GENERATE EMPLOYEE ID TRƯỚC =====
+            // ===== GENERATE EMPLOYEE ID BEFORE =====
             UUID employeeId = UUID.randomUUID();
             String employeeCode = generateEmployeeCode(employeeId);
 

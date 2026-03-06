@@ -1,6 +1,6 @@
-package com.hrm.attendance.entity;
+package com.hrm.payroll.entity;
 
-import com.hrm.attendance.util.constant.AttendanceStatus;
+import com.hrm.payroll.util.constant.PayrollStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.SQLDelete;
@@ -12,53 +12,56 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "attendances",
-        uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"employee_id", "work_date"})
-        })
-@SQLDelete(sql = "UPDATE attendances SET active = false WHERE id = ?")
-@Where(clause = "active = true")
-@EntityListeners(AuditingEntityListener.class)
+@Table(name = "payrolls",
+        uniqueConstraints = @UniqueConstraint(
+                columnNames = {"employee_id", "month", "year"}))
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Attendance {
+@SQLDelete(sql = "UPDATE payrolls SET active = false WHERE id = ?")
+@Where(clause = "active = true")
+@EntityListeners(AuditingEntityListener.class)
+public class Payroll {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    // Reference từ employee-service
     @Column(nullable = false)
     private UUID employeeId;
 
     @Column(nullable = false)
-    private LocalDate workDate;
+    private Integer month;
 
-    private LocalDateTime checkInTime;
+    @Column(nullable = false)
+    private Integer year;
 
-    private LocalDateTime checkOutTime;
+    // snapshot salary from contract
+    @Column(nullable = false)
+    private Double baseSalary;
 
-    private Double totalHours;
+    @Builder.Default
+    @Column(nullable = false)
+    private Double allowance = 0.0;
 
-    private Double overtimeHours;
+    @Builder.Default
+    @Column(nullable = false)
+    private Double overtimePay = 0.0;
 
-    private UUID shiftId;
+    @Builder.Default
+    @Column(nullable = false)
+    private Double deduction = 0.0;
+
+    @Column(nullable = false)
+    private Double netSalary;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private AttendanceStatus status;
-
-    private boolean late;
-
-    private boolean earlyLeave;
+    private PayrollStatus status;
 
     @Builder.Default
     @Column(nullable = false)

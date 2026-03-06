@@ -5,6 +5,7 @@ import com.hrm.attendance.dto.response.ResAttendanceDTO;
 import com.hrm.attendance.dto.response.ResultPaginationDTO;
 import com.hrm.attendance.entity.Attendance;
 import com.hrm.attendance.entity.WorkShift;
+import com.hrm.attendance.event.AttendanceRecordedEvent;
 import com.hrm.attendance.mapper.AttendanceMapper;
 import com.hrm.attendance.mapper.PaginationMapper;
 import com.hrm.attendance.repository.AttendanceRepository;
@@ -14,6 +15,7 @@ import com.hrm.attendance.util.constant.AttendanceStatus;
 import com.hrm.attendance.util.error.BadRequestException;
 import com.hrm.attendance.util.error.IdInvalidException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -36,6 +38,7 @@ public class AttendanceService {
     private final PaginationMapper paginationMapper;
     private final WorkShiftService workShiftService;
     private final EmployeeClient employeeClient;
+    private final ApplicationEventPublisher eventPublisher;
 
     // ===== CHECK IN =====
     @Transactional
@@ -64,20 +67,25 @@ public class AttendanceService {
         LocalDateTime now = LocalDateTime.now();
         LocalTime checkInTime = now.toLocalTime();
 
+        boolean isLate = checkInTime.isAfter(
+                shift.getStartTime()
+                        .plusMinutes(shift.getAllowLateMinutes())
+        );
+
         AttendanceStatus status = AttendanceStatus.PRESENT;
 
-        if (checkInTime.isAfter(
-                shift.getStartTime()
-                        .plusMinutes(shift.getAllowLateMinutes()))) {
+        if (isLate) {
             status = AttendanceStatus.LATE;
         }
 
         Attendance attendance = Attendance.builder()
                 .employeeId(employeeId)
-                .shiftId(shiftId)  // snapshot
+                .shiftId(shiftId)
                 .workDate(today)
                 .checkInTime(now)
                 .status(status)
+                .late(isLate)
+                .earlyLeave(false)
                 .build();
 
         attendanceRepository.save(attendance);
@@ -129,23 +137,36 @@ public class AttendanceService {
         attendance.setOvertimeHours(overtime);
 
         // ===== CHECK EARLY LEAVE =====
-        if (checkOut.toLocalTime()
-                .isBefore(shift.getEndTime())) {
+        boolean isEarlyLeave = checkOut.toLocalTime()
+                .isBefore(shift.getEndTime());
 
-            attendance.setStatus(AttendanceStatus.EARLY_LEAVE);
+        attendance.setEarlyLeave(isEarlyLeave);
+
+
+        if (isEarlyLeave) {
+
+            // If the previous value was LATE -> keep it as LATE
+            if (attendance.getStatus() == AttendanceStatus.PRESENT) {
+                attendance.setStatus(AttendanceStatus.EARLY_LEAVE);
+            }
+
+            // If previously set to LATE -> keep LATE
         }
 
         attendanceRepository.save(attendance);
 
-        // Publish event cho payroll-service
-//        eventPublisher.publishEvent(
-//                AttendanceRecordedEvent.builder()
-//                        .employeeId(employeeId)
-//                        .workDate(today)
-//                        .totalHours(hours)
-//                        .overtimeHours(overtime)
-//                        .build()
-//        );
+        // Publish event to payroll-service
+        eventPublisher.publishEvent(
+                AttendanceRecordedEvent.builder()
+                        .employeeId(employeeId)
+                        .workDate(today)
+                        .totalHours(hours)
+                        .overtimeHours(overtime)
+                        .status(attendance.getStatus())
+                        .earlyLeave(attendance.isEarlyLeave())
+                        .late(attendance.isLate())
+                        .build()
+        );
 
         return attendanceMapper.toDTO(attendance);
     }

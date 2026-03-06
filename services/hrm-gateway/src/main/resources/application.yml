@@ -40,7 +40,7 @@ spring:
             - id: payroll-service
               uri: lb://payroll-service
               predicates:
-                - Path=/api/payroll/**
+                - Path=/api/payrolls/**, /api/attendance-summary/**
 
             - id: notification-service
               uri: lb://notification-service

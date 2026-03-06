@@ -1,13 +1,11 @@
-package com.hrm.leave.event;
+package com.hrm.leave.listener;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hrm.leave.event.EmployeeCreatedEvent;
 import com.hrm.leave.service.LeaveService;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
-
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor

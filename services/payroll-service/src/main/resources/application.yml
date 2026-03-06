@@ -5,6 +5,12 @@ spring:
   application:
     name: payroll-service
 
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:9090/realms/hrm-realm
+
   datasource:
     url: jdbc:postgresql://localhost:5432/hrm_payroll
     username: postgres
@@ -14,6 +20,18 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: true
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: payroll-group
+      auto-offset-reset: earliest
+      enable-auto-commit: true
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+    listener:
+      missing-topics-fatal: false
 
 eureka:
   client:
