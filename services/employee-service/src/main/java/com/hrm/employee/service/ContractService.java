@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -185,6 +186,37 @@ public class ContractService {
         }
 
         return this.contractMapper.convertToResContractDTO(contract);
+    }
+
+    public ResContractDTO getActiveContractByEmployee(UUID employeeId) {
+
+        Optional<Contract> optional = contractRepository
+                .findByEmployeeIdAndStatus(employeeId, ContractStatus.ACTIVE);
+
+        System.out.println("=================================== CONTRACT =================================");
+        System.out.println("EMPLOYEE: " + employeeId);
+        System.out.println("CONTRACT FOUND: " + optional.isPresent());
+
+        if (optional.isEmpty()) {
+            return null;
+        }
+
+        Contract contract = optional.get();
+
+        return ResContractDTO.builder()
+                .id(contract.getId())
+                .employeeId(contract.getEmployeeId())
+                .type(contract.getType())
+                .status(contract.getStatus())
+                .startDate(contract.getStartDate())
+                .endDate(contract.getEndDate())
+                .salary(contract.getSalary())
+                .description(contract.getDescription())
+                .createdAt(contract.getCreatedAt())
+                .updatedAt(contract.getUpdatedAt())
+                .createdBy(contract.getCreatedBy())
+                .updatedBy(contract.getUpdatedBy())
+                .build();
     }
 
 }

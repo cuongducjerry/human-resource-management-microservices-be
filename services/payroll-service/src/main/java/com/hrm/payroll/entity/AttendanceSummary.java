@@ -29,15 +29,15 @@ public class AttendanceSummary {
 
     private Integer year;
 
-    private Integer workingDays;
+    private Double workingDays = 0.0;
 
-    private Integer lateDays;
+    private Integer lateDays = 0;
 
-    private Integer absentDays;
+    private Integer absentDays = 0;
 
-    private Double totalWorkHours;
+    private Double totalWorkHours = 0.0;
 
-    private Double overtimeHours;
+    private Double overtimeHours = 0.0;
 
     @Builder.Default
     @Column(nullable = false)

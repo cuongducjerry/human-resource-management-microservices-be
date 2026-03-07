@@ -17,7 +17,7 @@ public class AttendanceEventListener {
     @KafkaListener(topics = "attendance-recorded-topic", groupId = "payroll-group")
     public void handle(String message) throws Exception {
 
-        System.out.println("RAW JSON: " + message);
+        System.out.println("RAW ATTENDANCE RECORDED JSON: " + message);
 
         AttendanceRecordedEvent event =
                 objectMapper.readValue(message, AttendanceRecordedEvent.class);

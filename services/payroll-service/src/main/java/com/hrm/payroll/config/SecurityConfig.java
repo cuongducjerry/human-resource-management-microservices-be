@@ -21,7 +21,7 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/payrolls/**", "/api/attendance-summary/**").authenticated()
+                        .requestMatchers("/api/payrolls/**", "/api/attendance-summary/**", "/api/leave-summary/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 ->

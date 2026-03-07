@@ -49,7 +49,7 @@ public class AttendanceSummaryService {
                                         .employeeId(event.getEmployeeId())
                                         .month(month)
                                         .year(year)
-                                        .workingDays(0)
+                                        .workingDays(0.0)
                                         .lateDays(0)
                                         .absentDays(0)
                                         .totalWorkHours(0.0)
@@ -57,24 +57,27 @@ public class AttendanceSummaryService {
                                         .build()
                         );
 
-        // ===== ABSENT =====
-        if (event.getStatus() == AttendanceStatus.ABSENT) {
-            summary.setAbsentDays(summary.getAbsentDays() + 1);
+        double hours = event.getTotalHours();
+
+        // ===== WORKING / HALF / ABSENT =====
+        if (hours >= 7.5) {
+            summary.setWorkingDays(summary.getWorkingDays() + 1);
+        }
+        else if (hours >= 4) {
+            summary.setWorkingDays(summary.getWorkingDays() + 0.5);
         }
         else {
+            summary.setAbsentDays(summary.getAbsentDays() + 1);
+        }
 
-            // ===== WORKING DAY =====
-            summary.setWorkingDays(summary.getWorkingDays() + 1);
-
-            // ===== LATE =====
-            if (event.isLate()) {
-                summary.setLateDays(summary.getLateDays() + 1);
-            }
+        // ===== LATE =====
+        if (event.isLate()) {
+            summary.setLateDays(summary.getLateDays() + 1);
         }
 
         // ===== WORK HOURS =====
         summary.setTotalWorkHours(
-                summary.getTotalWorkHours() + event.getTotalHours()
+                summary.getTotalWorkHours() + hours
         );
 
         // ===== OVERTIME =====

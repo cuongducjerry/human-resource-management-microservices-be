@@ -34,4 +34,6 @@ public interface ContractRepository extends
             LocalDate today
     );
 
+    Optional<Contract> findByEmployeeIdAndStatus(UUID employeeId, ContractStatus status);
+
 }

@@ -10,7 +10,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ResAttendanceSummaryDTO {
+public class ResLeaveSummaryDTO {
 
     private UUID id;
 
@@ -20,15 +20,11 @@ public class ResAttendanceSummaryDTO {
 
     private Integer year;
 
-    private Double workingDays;
+    private Integer paidLeaveDays;
 
-    private Integer lateDays;
+    private Integer unpaidLeaveDays;
 
-    private Integer absentDays;
-
-    private Double totalWorkHours;
-
-    private Double overtimeHours;
+    private boolean active;
 
     private Instant createdAt;
 

@@ -29,9 +29,11 @@ public class LeaveSummary {
 
     private Integer year;
 
-    private Integer paidLeaveDays;
+    @Column(nullable = false)
+    private Integer paidLeaveDays = 0;
 
-    private Integer unpaidLeaveDays;
+    @Column(nullable = false)
+    private Integer unpaidLeaveDays = 0;
 
     @Builder.Default
     @Column(nullable = false)

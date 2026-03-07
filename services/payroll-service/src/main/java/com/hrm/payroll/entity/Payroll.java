@@ -11,6 +11,7 @@ import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -43,22 +44,22 @@ public class Payroll {
 
     // snapshot salary from contract
     @Column(nullable = false)
-    private Double baseSalary;
+    private BigDecimal baseSalary;
 
     @Builder.Default
     @Column(nullable = false)
-    private Double allowance = 0.0;
+    private BigDecimal allowance = BigDecimal.ZERO;
 
     @Builder.Default
     @Column(nullable = false)
-    private Double overtimePay = 0.0;
+    private BigDecimal overtimePay = BigDecimal.ZERO;
 
     @Builder.Default
     @Column(nullable = false)
-    private Double deduction = 0.0;
+    private BigDecimal deduction = BigDecimal.ZERO;
 
     @Column(nullable = false)
-    private Double netSalary;
+    private BigDecimal netSalary = BigDecimal.ZERO;
 
     @Enumerated(EnumType.STRING)
     private PayrollStatus status;

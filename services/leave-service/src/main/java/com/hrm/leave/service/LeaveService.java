@@ -8,6 +8,8 @@ import com.hrm.leave.dto.response.ResultPaginationDTO;
 import com.hrm.leave.entity.LeaveBalance;
 import com.hrm.leave.entity.LeaveRequest;
 import com.hrm.leave.event.EmployeeCreatedEvent;
+import com.hrm.leave.event.LeaveApprovedEvent;
+import com.hrm.leave.event.LeaveCancelledEvent;
 import com.hrm.leave.mapper.LeaveMapper;
 import com.hrm.leave.mapper.PaginationMapper;
 import com.hrm.leave.repository.LeaveBalanceRepository;
@@ -19,6 +21,7 @@ import com.hrm.leave.util.constant.LeaveType;
 import com.hrm.leave.util.error.BadRequestException;
 import com.hrm.leave.util.error.IdInvalidException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -41,6 +44,7 @@ public class LeaveService {
     private final EmployeeClient employeeClient;
     private final LeaveMapper leaveMapper;
     private final PaginationMapper paginationMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     // ================= CREATE =================
     public ResLeaveRequestDTO create(ReqCreateLeaveRequestDTO req) {
@@ -101,6 +105,18 @@ public class LeaveService {
         leave.setApproverId(approverId);
 
         leaveRequestRepository.save(leave);
+
+        LeaveApprovedEvent event = new LeaveApprovedEvent(
+                        leave.getId(),
+                        leave.getEmployeeId(),
+                        leave.getLeaveType(),
+                        leave.getStartDate(),
+                        leave.getEndDate(),
+                        leave.getTotalDays()
+        );
+
+        eventPublisher.publishEvent(event);
+
     }
 
     // ================= REJECT =================
@@ -144,8 +160,20 @@ public class LeaveService {
         }
 
         leave.setStatus(LeaveStatus.CANCELLED);
-
         leaveRequestRepository.save(leave);
+
+        LeaveCancelledEvent event =
+                new LeaveCancelledEvent(
+                        leave.getId(),
+                        leave.getEmployeeId(),
+                        leave.getLeaveType(),
+                        leave.getStartDate(),
+                        leave.getEndDate(),
+                        leave.getTotalDays()
+        );
+
+        eventPublisher.publishEvent(event);
+
     }
 
     // ================= LIST LEAVE REQUEST =================
