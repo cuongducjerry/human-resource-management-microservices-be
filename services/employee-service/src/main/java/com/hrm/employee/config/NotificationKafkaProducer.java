@@ -1,6 +1,5 @@
 package com.hrm.employee.config;
 
-import com.hrm.employee.event.EmployeeCreatedEvent;
 import com.hrm.employee.event.NotificationEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,17 +11,18 @@ import org.springframework.transaction.event.TransactionalEventListener;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class EmployeeKafkaProducer {
+public class NotificationKafkaProducer {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handleEmployeeCreated(EmployeeCreatedEvent event) {
+    public void sendNotification(NotificationEvent event) {
 
-        log.info("Sending Kafka event for employee: {}", event);
+        log.info("Sending Kafka event for notification employee: {}", event);
 
         kafkaTemplate.send(
-                "employee-created-topic",
+                "notifications",
+                event.getEmployeeId(),
                 event
         );
     }

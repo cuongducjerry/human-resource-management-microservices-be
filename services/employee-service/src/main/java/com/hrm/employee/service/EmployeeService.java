@@ -9,12 +9,14 @@ import com.hrm.employee.dto.request.*;
 import com.hrm.employee.dto.response.*;
 import com.hrm.employee.entity.Employee;
 import com.hrm.employee.event.EmployeeCreatedEvent;
+import com.hrm.employee.event.NotificationEvent;
 import com.hrm.employee.mapper.EmployeeMapper;
 import com.hrm.employee.mapper.PaginationMapper;
 import com.hrm.employee.repository.EmployeeRepository;
 
 import com.hrm.employee.util.SecurityUtil;
 import com.hrm.employee.util.constant.EmployeeStatus;
+import com.hrm.employee.util.constant.NotificationType;
 import com.hrm.employee.util.error.BadRequestException;
 import com.hrm.employee.util.error.IdInvalidException;
 
@@ -189,6 +191,19 @@ public class EmployeeService {
                             .build()
             );
 
+            eventPublisher.publishEvent(
+                    NotificationEvent.builder()
+                            .eventId(UUID.randomUUID().toString())
+                            .employeeId(employee.getId().toString())
+                            .title("Employee account created")
+                            .content("Your employee account has been created with code: "
+                                    + employee.getEmployeeCode())
+                            .type(NotificationType.EMPLOYEE)
+                            .email(employee.getEmail())
+                            .sendEmail(true)
+                            .build()
+            );
+
             return employeeMapper.convertToResCreateEmployeeDTO(employee);
 
         } catch (Exception e) {
@@ -196,6 +211,8 @@ public class EmployeeService {
             if (keycloakUserId != null) {
                 authClient.deleteUser(keycloakUserId);
             }
+
+            e.printStackTrace();
 
             throw e;
         }

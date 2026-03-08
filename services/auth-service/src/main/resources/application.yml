@@ -24,11 +24,11 @@ keycloak:
 
   # CLIENT LOGIN
   login-client-id: hrm-client
-  login-client-secret: agqLg7QgphMWFDLeye4sh1S6Y574cAvZ
+  login-client-secret: 60vVNPLhEO6hrytOgJTgBBX8ZZg3oCCG
 
   # CLIENT ADMIN
   admin-client-id: auth-service-client
-  admin-client-secret: ignWKHc8samEOEAwy4dlvmedab4RZLxt
+  admin-client-secret: sHDjurV4x8BtKNYeOhOwKRd46iJwoytw
 
   token-url: http://localhost:9090/realms/hrm-realm/protocol/openid-connect/token
   logout-url: http://localhost:9090/realms/hrm-realm/protocol/openid-connect/logout

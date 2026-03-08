@@ -43,7 +43,7 @@ eureka:
     service-url:
       defaultZone: http://localhost:8761/eureka
 
-keycloak:
-  token-url: http://localhost:9090/realms/hrm-realm/protocol/openid-connect/token
-  client-id: leave-service
-  client-secret: NrhYsAoq0ybFn2CRD9HRUpgXljSLqd9k
+#keycloak:
+#  token-url: http://localhost:9090/realms/hrm-realm/protocol/openid-connect/token
+#  client-id: leave-service
+#  client-secret: NrhYsAoq0ybFn2CRD9HRUpgXljSLqd9k

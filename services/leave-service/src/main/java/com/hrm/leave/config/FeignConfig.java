@@ -1,6 +1,6 @@
 package com.hrm.leave.config;
 
-import com.hrm.leave.service.KeycloakTokenService;
+//import com.hrm.leave.service.KeycloakTokenService;
 import feign.RequestInterceptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -13,7 +13,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 @RequiredArgsConstructor
 public class FeignConfig {
 
-    private final KeycloakTokenService tokenService;
+//    private final KeycloakTokenService tokenService;
 
     @Bean
     public RequestInterceptor requestInterceptor() {
@@ -25,11 +25,12 @@ public class FeignConfig {
             if (auth instanceof JwtAuthenticationToken jwtAuth) {
                 String token = jwtAuth.getToken().getTokenValue();
                 requestTemplate.header("Authorization", "Bearer " + token);
-            } else {
-                // Kafka case
-                String token = tokenService.getToken();
-                requestTemplate.header("Authorization", "Bearer " + token);
             }
+//            } else {
+//                // Kafka case
+//                String token = tokenService.getToken();
+//                requestTemplate.header("Authorization", "Bearer " + token);
+//            }
         };
     }
 }
