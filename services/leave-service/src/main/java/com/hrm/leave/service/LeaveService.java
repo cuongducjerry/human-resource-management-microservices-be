@@ -142,6 +142,18 @@ public class LeaveService {
 
         eventPublisher.publishEvent(event);
 
+        // notification
+        NotificationEvent notificationEvent = NotificationEvent.builder()
+                .eventId(UUID.randomUUID().toString())
+                .employeeId(leave.getEmployeeId().toString())
+                .type(NotificationType.LEAVE)
+                .title("Leave Request Approved")
+                .content("Your leave request has been approved successfully.")
+                .sendEmail(false)
+                .build();
+
+        eventPublisher.publishEvent(notificationEvent);
+
     }
 
     // ================= REJECT =================
@@ -152,6 +164,17 @@ public class LeaveService {
         leave.setStatus(LeaveStatus.REJECTED);
 
         leaveRequestRepository.save(leave);
+
+        NotificationEvent notification = NotificationEvent.builder()
+                .eventId(UUID.randomUUID().toString())
+                .employeeId(leave.getEmployeeId().toString())
+                .type(NotificationType.LEAVE)
+                .title("Leave Request Rejected")
+                .content("Your leave request has been rejected.")
+                .sendEmail(false)
+                .build();
+
+        eventPublisher.publishEvent(notification);
     }
 
     // ================= CANCEL =================
@@ -198,6 +221,17 @@ public class LeaveService {
         );
 
         eventPublisher.publishEvent(event);
+
+        NotificationEvent notification = NotificationEvent.builder()
+                .eventId(UUID.randomUUID().toString())
+                .employeeId(leave.getEmployeeId().toString())
+                .type(NotificationType.LEAVE)
+                .title("Leave Request Cancelled")
+                .content("Your leave request has been cancelled successfully.")
+                .sendEmail(true)
+                .build();
+
+        eventPublisher.publishEvent(notification);
 
     }
 
