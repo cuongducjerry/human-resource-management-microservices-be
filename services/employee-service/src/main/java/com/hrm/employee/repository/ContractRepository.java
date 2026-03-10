@@ -36,4 +36,11 @@ public interface ContractRepository extends
 
     Optional<Contract> findByEmployeeIdAndStatus(UUID employeeId, ContractStatus status);
 
+    @Query("""
+       SELECT c FROM Contract c
+       WHERE c.status = 'ACTIVE'
+       AND c.endDate BETWEEN :today AND :threshold
+       """)
+    List<Contract> findContractsExpiringBetween(LocalDate today, LocalDate threshold);
+
 }

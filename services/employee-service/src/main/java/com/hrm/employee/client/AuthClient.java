@@ -45,6 +45,7 @@ public interface AuthClient {
             @RequestBody ReqChangePasswordDTO request
     );
 
-
+    @GetMapping("/api/auth/internal/users/by-role/{role}")
+    List<String> getUserIdsByRole(@PathVariable("role") String role);
 
 }

@@ -2,6 +2,7 @@ package com.hrm.leave.service;
 
 import com.hrm.leave.client.EmployeeClient;
 import com.hrm.leave.dto.request.ReqCreateLeaveRequestDTO;
+import com.hrm.leave.dto.response.ResEmployeeDTO;
 import com.hrm.leave.dto.response.ResLeaveBalanceDTO;
 import com.hrm.leave.dto.response.ResLeaveRequestDTO;
 import com.hrm.leave.dto.response.ResultPaginationDTO;
@@ -10,6 +11,7 @@ import com.hrm.leave.entity.LeaveRequest;
 import com.hrm.leave.event.EmployeeCreatedEvent;
 import com.hrm.leave.event.LeaveApprovedEvent;
 import com.hrm.leave.event.LeaveCancelledEvent;
+import com.hrm.leave.event.NotificationEvent;
 import com.hrm.leave.mapper.LeaveMapper;
 import com.hrm.leave.mapper.PaginationMapper;
 import com.hrm.leave.repository.LeaveBalanceRepository;
@@ -18,8 +20,10 @@ import com.hrm.leave.util.SecurityUtil;
 import com.hrm.leave.util.constant.Gender;
 import com.hrm.leave.util.constant.LeaveStatus;
 import com.hrm.leave.util.constant.LeaveType;
+import com.hrm.leave.util.constant.NotificationType;
 import com.hrm.leave.util.error.BadRequestException;
 import com.hrm.leave.util.error.IdInvalidException;
+import jakarta.ws.rs.ForbiddenException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -66,6 +70,9 @@ public class LeaveService {
             validateSufficientBalance(balance, totalDays);
         }
 
+        ResEmployeeDTO employee =
+                employeeClient.getInternal(req.getEmployeeId());
+
         LeaveRequest leave = LeaveRequest.builder()
                 .employeeId(req.getEmployeeId())
                 .leaveType(req.getLeaveType())
@@ -74,9 +81,26 @@ public class LeaveService {
                 .totalDays(totalDays)
                 .status(LeaveStatus.PENDING)
                 .reason(req.getReason())
+                .escalated(false)
                 .build();
 
         leaveRequestRepository.save(leave);
+
+        // ===== SEND NOTIFICATION TO MANAGER =====
+        if (employee.getManagerId() != null) {
+
+            NotificationEvent event = NotificationEvent.builder()
+                    .eventId(UUID.randomUUID().toString())
+                    .employeeId(employee.getManagerId().toString())
+                    .title("Leave request approval")
+                    .content(employee.getFullName()
+                            + " submitted a leave request.")
+                    .type(NotificationType.LEAVE)
+                    .sendEmail(true)     ////////////////////////////////////////
+                    .build();
+
+            eventPublisher.publishEvent(event);
+        }
 
         return leaveMapper.toDTO(leave);
     }
@@ -102,7 +126,7 @@ public class LeaveService {
         }
 
         leave.setStatus(LeaveStatus.APPROVED);
-        leave.setApproverId(approverId);
+        leave.setManagerId(UUID.fromString(approverId));
 
         leaveRequestRepository.save(leave);
 
@@ -181,6 +205,29 @@ public class LeaveService {
             Specification<LeaveRequest> spec,
             Pageable pageable) {
 
+        UUID currentEmployeeId =
+                UUID.fromString(SecurityUtil.getCurrentEmployeeId());
+
+        // ===== EMPLOYEE only views their own leave =====
+        if (SecurityUtil.hasRole("ROLE_EMPLOYEE")) {
+
+            Specification<LeaveRequest> employeeSpec =
+                    (root, query, cb) ->
+                            cb.equal(root.get("employeeId"), currentEmployeeId);
+
+            spec = spec.and(employeeSpec);
+        }
+
+        // ===== The manager only watches the subordinates leave records =====
+        if (SecurityUtil.hasRole("ROLE_MANAGER")) {
+
+            Specification<LeaveRequest> managerSpec =
+                    (root, query, cb) ->
+                            cb.equal(root.get("managerId"), currentEmployeeId);
+
+            spec = spec.and(managerSpec);
+        }
+
         Page<LeaveRequest> page =
                 leaveRequestRepository.findAll(spec, pageable);
 
@@ -199,6 +246,27 @@ public class LeaveService {
     }
 
     public List<ResLeaveBalanceDTO> getBalanceByEmployee(UUID employeeId) {
+
+        UUID currentEmployeeId =
+                UUID.fromString(SecurityUtil.getCurrentEmployeeId());
+
+        // ===== EMPLOYEE =====
+        if (SecurityUtil.hasRole("ROLE_EMPLOYEE")) {
+            if (!employeeId.equals(currentEmployeeId)) {
+                throw new ForbiddenException("You cannot view this leave balance");
+            }
+        }
+
+        // ===== MANAGER =====
+        if (SecurityUtil.hasRole("ROLE_MANAGER")) {
+
+            List<UUID> subordinates =
+                    employeeClient.getSubordinates(currentEmployeeId);
+
+            if (!subordinates.contains(employeeId)) {
+                throw new ForbiddenException("You cannot view this employee leave balance");
+            }
+        }
 
         List<LeaveBalance> list =
                 leaveBalanceRepository

@@ -39,4 +39,22 @@ public interface EmployeeRepository extends JpaRepository<Employee, UUID>, JpaSp
 
     @Query("SELECT e.id FROM Employee e WHERE e.active = true")
     List<UUID> findAllActiveEmployeeIds();
+
+    @Query("SELECT e.id FROM Employee e WHERE e.managerId = :managerId AND e.active = true")
+    List<UUID> findSubordinateIds(@Param("managerId") UUID managerId);
+
+    @Query("""
+        SELECT e.id
+        FROM Employee e
+        WHERE e.keycloakUserId IN :userIds
+        AND e.active = true
+    """)
+    List<UUID> findIdsByKeycloakUserIds(@Param("userIds") List<String> userIds);
+
+    @Query("""
+       SELECT e FROM Employee e
+       WHERE MONTH(e.dateOfBirth) = :month
+       AND DAY(e.dateOfBirth) = :day
+       """)
+    List<Employee> findByMonthAndDay(int month, int day);
 }

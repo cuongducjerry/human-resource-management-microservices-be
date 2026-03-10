@@ -45,5 +45,14 @@ public class EmployeeInternalController {
         return employeeService.getAllActiveEmployeeIds();
     }
 
+    @GetMapping("/{managerId}/subordinates")
+    public List<UUID> getSubordinates(@PathVariable UUID managerId) {
+        return employeeService.getSubordinateIds(managerId);
+    }
+
+    @GetMapping("/hr-admins")
+    public List<UUID> getHrAdminIds() {
+        return employeeService.getHrAdminIds();
+    }
 
 }

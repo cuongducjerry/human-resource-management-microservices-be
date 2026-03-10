@@ -482,6 +482,36 @@ public class AuthService {
                 Void.class);
     }
 
+
+    public List<String> getUserIdsByRole(String roleName) {
+
+        String adminToken = getAdminAccessToken();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(adminToken);
+
+        HttpEntity<Void> request = new HttpEntity<>(headers);
+
+        String url = adminBaseUrl + "/roles/" + roleName + "/users";
+
+        ResponseEntity<List> response =
+                restTemplate.exchange(
+                        url,
+                        HttpMethod.GET,
+                        request,
+                        List.class
+                );
+
+        List<Map<String, Object>> users = response.getBody();
+
+        if (users == null) return List.of();
+
+        return users.stream()
+                .map(u -> (String) u.get("id"))
+                .toList();
+    }
+
+
     /* =======================================================
                         INTERNAL
        ======================================================= */

@@ -13,6 +13,7 @@ import com.hrm.attendance.specification.AttendanceSpecification;
 import com.hrm.attendance.util.SecurityUtil;
 import com.hrm.attendance.util.constant.AttendanceStatus;
 import com.hrm.attendance.util.error.BadRequestException;
+import com.hrm.attendance.util.error.ForbiddenException;
 import com.hrm.attendance.util.error.IdInvalidException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -178,11 +179,36 @@ public class AttendanceService {
             Pageable pageable
     ) {
 
+        UUID currentEmployeeId =
+                UUID.fromString(SecurityUtil.getCurrentEmployeeId());
+
         Specification<Attendance> spec =
                 AttendanceSpecification.byEmployee(employeeId)
                         .and(AttendanceSpecification.byDateRange(startDate, endDate));
 
-        Page<Attendance> page = attendanceRepository.findAll(spec, pageable);
+        // ===== EMPLOYEE =====
+        if (SecurityUtil.hasRole("ROLE_EMPLOYEE")) {
+
+            spec = spec.and(
+                    (root, query, cb) ->
+                            cb.equal(root.get("employeeId"), currentEmployeeId)
+            );
+        }
+
+        // ===== MANAGER =====
+        if (SecurityUtil.hasRole("ROLE_MANAGER")) {
+
+            List<UUID> subordinates =
+                    employeeClient.getSubordinates(currentEmployeeId);
+
+            spec = spec.and(
+                    (root, query, cb) ->
+                            root.get("employeeId").in(subordinates)
+            );
+        }
+
+        Page<Attendance> page =
+                attendanceRepository.findAll(spec, pageable);
 
         int pageNumber = pageable.getPageNumber() + 1;
         int pageSize = pageable.getPageSize();
@@ -202,6 +228,27 @@ public class AttendanceService {
 
         Attendance attendance = attendanceRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Attendance not found"));
+
+        UUID currentEmployeeId =
+                UUID.fromString(SecurityUtil.getCurrentEmployeeId());
+
+        // ===== EMPLOYEE =====
+        if (SecurityUtil.hasRole("ROLE_EMPLOYEE")) {
+            if (!attendance.getEmployeeId().equals(currentEmployeeId)) {
+                throw new ForbiddenException("You cannot view this attendance");
+            }
+        }
+
+        // ===== MANAGER =====
+        if (SecurityUtil.hasRole("ROLE_MANAGER")) {
+
+            List<UUID> subordinates =
+                    employeeClient.getSubordinates(currentEmployeeId);
+
+            if (!subordinates.contains(attendance.getEmployeeId())) {
+                throw new ForbiddenException("You cannot view this attendance");
+            }
+        }
 
         return attendanceMapper.toDTO(attendance);
     }

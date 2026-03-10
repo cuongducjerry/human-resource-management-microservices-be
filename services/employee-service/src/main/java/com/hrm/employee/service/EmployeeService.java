@@ -540,6 +540,18 @@ public class EmployeeService {
         );
     }
 
+    @Transactional
+    public List<UUID> getHrAdminIds() {
+
+        List<String> userIds = authClient.getUserIdsByRole("ROLE_HR_ADMIN");
+
+        if (userIds.isEmpty()) {
+            return List.of();
+        }
+
+        return employeeRepository.findIdsByKeycloakUserIds(userIds);
+    }
+
     public List<UUID> getAllActiveEmployeeIds() {
         return employeeRepository.findAllActiveEmployeeIds();
     }
@@ -567,6 +579,11 @@ public class EmployeeService {
         authClient.enableUser(employee.getKeycloakUserId());
 
         return employeeMapper.convertToResEmployeeDTO(employee);
+    }
+
+    @Transactional
+    public List<UUID> getSubordinateIds(UUID managerId) {
+        return employeeRepository.findSubordinateIds(managerId);
     }
 
     private Employee getEmployeeOrThrow(UUID id) {

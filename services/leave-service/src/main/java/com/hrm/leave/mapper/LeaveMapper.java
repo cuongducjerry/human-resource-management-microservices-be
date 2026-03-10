@@ -18,7 +18,7 @@ public class LeaveMapper {
                 .endDate(leave.getEndDate())
                 .totalDays(leave.getTotalDays())
                 .status(leave.getStatus())
-                .approverId(leave.getApproverId())
+                .managerId(leave.getManagerId())
                 .reason(leave.getReason())
                 .createdAt(leave.getCreatedAt())
                 .updatedAt(leave.getUpdatedAt())

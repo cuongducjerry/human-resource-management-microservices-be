@@ -29,7 +29,7 @@ public class ResLeaveRequestDTO {
 
     private LeaveStatus status;
 
-    private String approverId;
+    private UUID managerId;
 
     private String reason;
 

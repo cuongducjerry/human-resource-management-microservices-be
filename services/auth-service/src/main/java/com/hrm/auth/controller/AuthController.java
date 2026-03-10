@@ -171,4 +171,11 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping("/internal/users/by-role/{role}")
+    public ResponseEntity<List<String>> getUserIdsByRole(
+            @PathVariable String role
+    ) {
+        return ResponseEntity.ok(authService.getUserIdsByRole(role));
+    }
+
 }

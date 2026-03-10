@@ -52,7 +52,7 @@ public class LeaveRequest {
     @Column(nullable = false)
     private LeaveStatus status;
 
-    private String approverId;
+    private UUID managerId;
 
     @Column(columnDefinition = "TEXT")
     private String reason;
@@ -60,6 +60,10 @@ public class LeaveRequest {
     @Builder.Default
     @Column(nullable = false)
     private boolean active = true;
+
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean escalated = false;
 
     @CreatedDate
     private Instant createdAt;

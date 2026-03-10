@@ -7,15 +7,21 @@ import com.hrm.payroll.dto.response.ResultPaginationDTO;
 import com.hrm.payroll.entity.AttendanceSummary;
 import com.hrm.payroll.entity.LeaveSummary;
 import com.hrm.payroll.entity.Payroll;
+import com.hrm.payroll.event.NotificationEvent;
 import com.hrm.payroll.mapper.PaginationMapper;
 import com.hrm.payroll.mapper.PayrollMapper;
 import com.hrm.payroll.repository.AttendanceSummaryRepository;
 import com.hrm.payroll.repository.LeaveSummaryRepository;
 import com.hrm.payroll.repository.PayrollRepository;
 import com.hrm.payroll.specification.PayrollSpecification;
+import com.hrm.payroll.util.SecurityUtil;
+import com.hrm.payroll.util.constant.NotificationType;
 import com.hrm.payroll.util.constant.PayrollStatus;
 import com.hrm.payroll.util.error.BadRequestException;
+import com.hrm.payroll.util.error.ForbiddenException;
+import com.hrm.payroll.util.error.IdInvalidException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -39,6 +45,7 @@ public class PayrollService {
     private final EmployeeClient employeeClient;
     private final AttendanceSummaryRepository attendanceSummaryRepository;
     private final LeaveSummaryRepository leaveSummaryRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public ResultPaginationDTO list(
             UUID employeeId,
@@ -47,6 +54,11 @@ public class PayrollService {
             PayrollStatus status,
             Pageable pageable
     ) {
+
+        // nếu user là EMPLOYEE thì chỉ được xem payroll của mình
+        if (SecurityUtil.hasRole("ROLE_EMPLOYEE")) {
+            employeeId = UUID.fromString(SecurityUtil.getCurrentEmployeeId());
+        }
 
         Specification<Payroll> spec =
                 PayrollSpecification.filter(
@@ -84,7 +96,13 @@ public class PayrollService {
         for (Payroll payroll : payrolls) {
 
             if (payroll.getStatus() == PayrollStatus.DRAFT) {
+
                 payroll.setStatus(PayrollStatus.CALCULATED);
+
+                sendPayrollNotification(
+                        payroll,
+                        "Your payroll for " + month + "/" + year + " is calculated."
+                );
             }
         }
 
@@ -101,7 +119,13 @@ public class PayrollService {
         for (Payroll payroll : payrolls) {
 
             if (payroll.getStatus() == PayrollStatus.CALCULATED) {
+
                 payroll.setStatus(PayrollStatus.PAID);
+
+                sendPayrollNotification(
+                        payroll,
+                        "Your salary for " + month + "/" + year + " has been paid."
+                );
             }
         }
 
@@ -224,6 +248,15 @@ public class PayrollService {
         Payroll payroll = payrollRepository.findById(payrollId)
                 .orElseThrow(() -> new RuntimeException("Payroll not found"));
 
+        String employeeId = SecurityUtil.getCurrentEmployeeId();
+
+        // If the user is an EMPLOYEE, only their own payroll will be displayed
+        if (SecurityUtil.hasRole("ROLE_EMPLOYEE") &&
+                !payroll.getEmployeeId().toString().equals(employeeId)) {
+
+            throw new ForbiddenException("You cannot view other employee payroll");
+        }
+
         return payrollMapper.toDTO(payroll);
     }
 
@@ -231,13 +264,18 @@ public class PayrollService {
     public ResPayrollDTO calculatePayroll(UUID payrollId) {
 
         Payroll payroll = payrollRepository.findById(payrollId)
-                .orElseThrow(() -> new RuntimeException("Payroll not found"));
+                .orElseThrow(() -> new IdInvalidException("Payroll not found"));
 
         if (payroll.getStatus() == PayrollStatus.DRAFT) {
-            payroll.setStatus(PayrollStatus.CALCULATED);
-        }
 
-        payrollRepository.save(payroll);
+            payroll.setStatus(PayrollStatus.CALCULATED);
+            payrollRepository.save(payroll);
+
+            sendPayrollNotification(
+                    payroll,
+                    "Your payroll for " + payroll.getMonth() + "/" + payroll.getYear() + " is calculated."
+            );
+        }
 
         return payrollMapper.toDTO(payroll);
     }
@@ -249,12 +287,31 @@ public class PayrollService {
                 .orElseThrow(() -> new RuntimeException("Payroll not found"));
 
         if (payroll.getStatus() == PayrollStatus.CALCULATED) {
+
             payroll.setStatus(PayrollStatus.PAID);
+            payrollRepository.save(payroll);
+
+            sendPayrollNotification(
+                    payroll,
+                    "Your salary for " + payroll.getMonth() + "/" + payroll.getYear() + " has been paid."
+            );
         }
 
-        payrollRepository.save(payroll);
-
         return payrollMapper.toDTO(payroll);
+    }
+
+    private void sendPayrollNotification(Payroll payroll, String message) {
+
+        NotificationEvent event = NotificationEvent.builder()
+                .eventId(UUID.randomUUID().toString())
+                .employeeId(payroll.getEmployeeId().toString())
+                .title("Payroll Update")
+                .content(message)
+                .type(NotificationType.PAYROLL)
+                .sendEmail(true)
+                .build();
+
+        eventPublisher.publishEvent(event);
     }
 
 }

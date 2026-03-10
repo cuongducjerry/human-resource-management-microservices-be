@@ -1,4 +1,4 @@
-package com.hrm.notification.util.constant;
+package com.hrm.payroll.util.constant;
 
 public enum NotificationType {
     EMPLOYEE,
