@@ -7,12 +7,14 @@ import com.hrm.notification.event.NotificationEvent;
 import com.hrm.notification.repository.NotificationRepository;
 import com.hrm.notification.util.constant.KafkaTopics;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class NotificationConsumer {
@@ -65,12 +67,16 @@ public class NotificationConsumer {
                 dto
         );
 
-        if (event.isSendEmail()) {
-            emailService.send(
-                    event.getEmail(),
-                    event.getTitle(),
-                    event.getContent()
-            );
+        try {
+            if (event.isSendEmail() && event.getEmail() != null) {
+                emailService.send(
+                        event.getEmail(),
+                        event.getTitle(),
+                        event.getContent()
+                );
+            }
+        } catch (Exception e) {
+            log.error("Email send failed for event {}", event.getEventId(), e);
         }
 
     }

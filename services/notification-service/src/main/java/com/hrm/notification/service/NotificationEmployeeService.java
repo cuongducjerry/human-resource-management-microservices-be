@@ -62,7 +62,7 @@ public class NotificationEmployeeService {
         Notification noti = repo.findById(uuid)
                 .orElseThrow(() -> new IdInvalidException("Notification not found"));
 
-        if (!noti.getEmployeeId().equals(employeeId)) {
+        if (!noti.getEmployeeId().toString().equals(employeeId)) {
             throw new ForbiddenException("Forbidden");
         }
 

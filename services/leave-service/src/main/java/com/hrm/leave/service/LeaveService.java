@@ -92,6 +92,7 @@ public class LeaveService {
             NotificationEvent event = NotificationEvent.builder()
                     .eventId(UUID.randomUUID().toString())
                     .employeeId(employee.getManagerId().toString())
+                    .email(employee.getEmail())
                     .title("Leave request approval")
                     .content(employee.getFullName()
                             + " submitted a leave request.")

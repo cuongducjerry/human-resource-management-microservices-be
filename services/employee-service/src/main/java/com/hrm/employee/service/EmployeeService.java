@@ -1,7 +1,6 @@
 package com.hrm.employee.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+
 import com.hrm.employee.client.AttendanceClient;
 import com.hrm.employee.client.AuthClient;
 import com.hrm.employee.client.OrganizationClient;
@@ -19,20 +18,16 @@ import com.hrm.employee.util.constant.EmployeeStatus;
 import com.hrm.employee.util.constant.NotificationType;
 import com.hrm.employee.util.error.BadRequestException;
 import com.hrm.employee.util.error.IdInvalidException;
+import com.hrm.employee.util.error.ForbiddenException;
 
 import feign.FeignException;
-import jakarta.ws.rs.ForbiddenException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationAdapter;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
@@ -223,6 +218,24 @@ public class EmployeeService {
             Specification<Employee> spec,
             Pageable pageable) {
 
+
+        if (!SecurityUtil.hasRole("ROLE_HR_ADMIN") && !SecurityUtil.hasRole("ROLE_SUPER_ADMIN")) {
+
+            // If you are a MANAGER -> only monitor your own employees
+            if (SecurityUtil.hasRole("ROLE_MANAGER")) {
+
+                String managerId = SecurityUtil.getCurrentEmployeeId();
+
+                Specification<Employee> managerSpec =
+                        (root, query, cb) ->
+                                cb.equal(root.get("managerId"), UUID.fromString(managerId));
+
+                spec = spec == null
+                        ? managerSpec
+                        : spec.and(managerSpec);
+            }
+        }
+
         Page<Employee> page = employeeRepository.findAll(spec, pageable);
 
         int pageNumber = pageable.getPageNumber() + 1;
@@ -233,7 +246,7 @@ public class EmployeeService {
         List<ResEmployeeDTO> list = page.getContent()
                 .stream()
                 .map(employeeMapper::convertToResEmployeeDTO)
-                .collect(Collectors.toList());
+                .toList();
 
         return paginationMapper.convertToResultPaginationDTO(
                 pageNumber, pageSize, totalPages, totalElements, list);
@@ -273,6 +286,28 @@ public class EmployeeService {
     public ResEmployeeDTO getEmployeeById(UUID id) {
 
         Employee employee = getEmployeeOrThrow(id);
+
+
+        if (SecurityUtil.hasRole("ROLE_HR_ADMIN") || SecurityUtil.hasRole("ROLE_SUPER_ADMIN")) {
+            return employeeMapper.convertToResEmployeeDTO(employee);
+        }
+
+        String currentEmployeeId = SecurityUtil.getCurrentEmployeeId();
+
+
+        if (SecurityUtil.hasRole("ROLE_EMPLOYEE")) {
+
+            if (!employee.getId().toString().equals(currentEmployeeId)) {
+                throw new ForbiddenException("Access denied");
+            }
+        }
+
+        if (SecurityUtil.hasRole("ROLE_MANAGER")) {
+
+            if (!employee.getManagerId().toString().equals(currentEmployeeId)) {
+                throw new ForbiddenException("Access denied");
+            }
+        }
 
         return employeeMapper.convertToResEmployeeDTO(employee);
     }

@@ -2,6 +2,7 @@ package com.hrm.payroll.service;
 
 import com.hrm.payroll.client.EmployeeClient;
 import com.hrm.payroll.dto.response.ResContractDTO;
+import com.hrm.payroll.dto.response.ResEmployeeDTO;
 import com.hrm.payroll.dto.response.ResPayrollDTO;
 import com.hrm.payroll.dto.response.ResultPaginationDTO;
 import com.hrm.payroll.entity.AttendanceSummary;
@@ -302,11 +303,14 @@ public class PayrollService {
 
     private void sendPayrollNotification(Payroll payroll, String message) {
 
+        ResEmployeeDTO employeeDTO = employeeClient.getInternal(payroll.getEmployeeId());
+
         NotificationEvent event = NotificationEvent.builder()
                 .eventId(UUID.randomUUID().toString())
-                .employeeId(payroll.getEmployeeId().toString())
+                .employeeId(employeeDTO.getId().toString())
                 .title("Payroll Update")
                 .content(message)
+                .email(employeeDTO.getEmail())
                 .type(NotificationType.PAYROLL)
                 .sendEmail(true)
                 .build();
