@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -43,6 +44,13 @@ public class AuthController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
                 .body(res);
+    }
+
+    @GetMapping("/account")
+    @ApiMessage("Fetch account")
+    public ResponseEntity<ResLoginDTO.UserAccount> getAccount() {
+        ResLoginDTO.UserAccount userGetAccount = this.authService.getUserAccount();
+        return ResponseEntity.ok().body(userGetAccount);
     }
 
     @GetMapping("/refresh")

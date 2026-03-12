@@ -2,8 +2,11 @@ package com.hrm.auth.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.hrm.auth.client.EmployeeClient;
 import com.hrm.auth.dto.request.ReqCreateKeycloakUserDTO;
+import com.hrm.auth.dto.response.ResEmployeeDTO;
 import com.hrm.auth.dto.response.ResLoginDTO;
+import com.hrm.auth.util.SecurityUtil;
 import com.hrm.auth.util.error.InvalidLoginException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,6 +27,7 @@ public class AuthService {
 
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+    private final EmployeeClient employeeClient;
 
     @Value("${keycloak.token-url}")
     private String tokenUrl;
@@ -102,6 +106,33 @@ public class AuthService {
         } catch (HttpClientErrorException e) {
             throw new RuntimeException("Logout failed");
         }
+    }
+
+    public ResLoginDTO.UserAccount getUserAccount() {
+
+        // 1. Get employeeId from JWT
+        String employeeId = SecurityUtil.getCurrentEmployeeId();
+
+        System.out.println("EMPLOYEE ID: " + employeeId);
+
+        // 2. Call employee-service
+        ResEmployeeDTO employee = employeeClient.getInternal(UUID.fromString(employeeId));
+
+        ResLoginDTO.UserAccount userGetAccount = new ResLoginDTO.UserAccount();
+
+        if (employee != null) {
+
+            userGetAccount.setEmployeeId(employee.getId().toString());
+            userGetAccount.setEmail(employee.getEmail());
+            userGetAccount.setFullName(employee.getFullName());
+            userGetAccount.setAvatarUrl(employee.getAvatarUrl());
+
+            userGetAccount.setRoles(
+                    SecurityUtil.getCurrentUserRoles()
+            );
+        }
+
+        return userGetAccount;
     }
 
     /* =======================================================
@@ -572,34 +603,56 @@ public class AuthService {
     }
 
     private ResLoginDTO.UserAccount extractUser(String accessToken) {
+
         try {
+
             String[] chunks = accessToken.split("\\.");
             String payload = new String(Base64.getUrlDecoder().decode(chunks[1]));
 
             JsonNode jsonNode = objectMapper.readTree(payload);
 
-            String id = jsonNode.get("sub").asText();
-            String username = jsonNode.get("preferred_username").asText();
-            String email = jsonNode.get("email").asText();
-
             String employeeId = null;
-
             if (jsonNode.has("employeeId")) {
                 employeeId = jsonNode.get("employeeId").asText();
             }
 
-            List<String> roles = new ArrayList<>();
-            JsonNode realmRoles =
-                    jsonNode.get("realm_access").get("roles");
-
-            for (JsonNode role : realmRoles) {
-                roles.add(role.asText());
+            // fallback nếu token cũ chưa có employeeId
+            if (employeeId == null && jsonNode.has("sub")) {
+                employeeId = jsonNode.get("sub").asText();
             }
 
-            return new ResLoginDTO.UserAccount(id, username, email, roles, employeeId);
+            String username = jsonNode.has("preferred_username")
+                    ? jsonNode.get("preferred_username").asText()
+                    : null;
+
+            String email = jsonNode.has("email")
+                    ? jsonNode.get("email").asText()
+                    : null;
+
+            List<String> roles = new ArrayList<>();
+
+            if (jsonNode.has("realm_access")
+                    && jsonNode.get("realm_access").has("roles")) {
+
+                JsonNode realmRoles = jsonNode
+                        .get("realm_access")
+                        .get("roles");
+
+                for (JsonNode role : realmRoles) {
+                    roles.add(role.asText());
+                }
+            }
+
+            return new ResLoginDTO.UserAccount(
+                    employeeId, 
+                    username,
+                    email,
+                    roles,
+                    employeeId
+            );
 
         } catch (Exception e) {
-            throw new RuntimeException("Cannot parse access token");
+            throw new RuntimeException("Cannot parse access token", e);
         }
     }
 

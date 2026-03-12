@@ -20,10 +20,10 @@ public class ResLoginDTO {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class UserAccount {
-        private String id;
-        private String username;
+        private String employeeId;
+        private String fullName;
         private String email;
         private List<String> roles;
-        private String employeeId;
+        private String avatarUrl;
     }
 }
