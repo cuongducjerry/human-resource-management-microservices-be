@@ -13,6 +13,7 @@ public class EmployeeMapper {
         ResEmployeeDTO dto = new ResEmployeeDTO();
 
         dto.setId(employee.getId());
+        dto.setKeycloakUserId(employee.getKeycloakUserId());
         dto.setEmployeeCode(employee.getEmployeeCode());
         dto.setFullName(employee.getFullName());
         dto.setEmail(employee.getEmail());

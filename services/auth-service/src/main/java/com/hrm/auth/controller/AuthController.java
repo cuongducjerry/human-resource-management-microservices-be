@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -145,27 +146,27 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/users/{id}/roles")
+    @GetMapping("/internal/users/{id}/roles")
     @ApiMessage("Get user roles")
-    public ResponseEntity<List<String>> getUserRoles(@PathVariable String id) {
+    public List<String> getUserRoles(@PathVariable String id) {
 
-        return ResponseEntity.ok(authService.getUserRoles(id));
+        return authService.getUserRoles(id);
     }
 
-    @PutMapping("/users/{id}/roles")
+    @PutMapping("/internal/users/{id}/roles")
     @ApiMessage("Update user roles")
-    public ResponseEntity<Void> updateUserRoles(
+    public void updateUserRoles(
             @PathVariable String id,
             @RequestBody List<String> roles
     ) {
 
         authService.updateUserRoles(id, roles);
-        return ResponseEntity.ok().build();
+
     }
 
-    @PutMapping("/users/{id}/change-password")
+    @PutMapping("/internal/users/{id}/change-password")
     @ApiMessage("Change user password")
-    public ResponseEntity<Void> changePassword(
+    public void changePassword(
             @PathVariable String id,
             @Valid @RequestBody ReqChangePasswordDTO request
     ) {
@@ -176,14 +177,13 @@ public class AuthController {
                 request.getNewPassword()
         );
 
-        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/internal/users/by-role/{role}")
-    public ResponseEntity<List<String>> getUserIdsByRole(
+    public List<String> getUserIdsByRole(
             @PathVariable String role
     ) {
-        return ResponseEntity.ok(authService.getUserIdsByRole(role));
+        return authService.getUserIdsByRole(role);
     }
 
 }

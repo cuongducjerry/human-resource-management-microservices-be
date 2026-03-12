@@ -9,6 +9,7 @@ import com.hrm.employee.service.EmployeeService;
 
 import com.hrm.employee.specification.EmployeeSpecification;
 import com.hrm.employee.util.annotation.ApiMessage;
+import com.hrm.employee.util.constant.EmployeeStatus;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -46,10 +47,11 @@ public class EmployeeController {
     @ApiMessage("Fetch all employee")
     public ResponseEntity<ResultPaginationDTO> getAll(
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) EmployeeStatus status,
             Pageable pageable
     ) {
 
-        Specification<Employee> spec = EmployeeSpecification.keyword(keyword);
+        Specification<Employee> spec = EmployeeSpecification.filter(keyword, status);
 
         return ResponseEntity.status(HttpStatus.OK).body(
                 employeeService.handleListEmployee(spec, pageable));
@@ -62,6 +64,19 @@ public class EmployeeController {
     public ResponseEntity<ResEmployeeDTO> getById(@PathVariable UUID id) {
 
         return ResponseEntity.status(HttpStatus.OK).body(employeeService.getEmployeeById(id));
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('EMPLOYEE_UPDATE')")
+    @ApiMessage("Update employee")
+    public ResponseEntity<ResEmployeeDTO> updateEmployee(
+            @PathVariable UUID id,
+            @Valid @RequestBody ReqUpdateEmployeeDTO req
+    ) {
+
+        return ResponseEntity.ok(
+                employeeService.updateEmployee(id, req)
+        );
     }
 
     // ================= UPDATE STATUS (ADMIN) =================

@@ -17,6 +17,8 @@ public class ResEmployeeDTO {
 
     private UUID id;
 
+    private String keycloakUserId;
+
     private String employeeCode;
 
     private String fullName;

@@ -10,6 +10,7 @@ import com.hrm.auth.util.SecurityUtil;
 import com.hrm.auth.util.error.InvalidLoginException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
@@ -332,15 +333,14 @@ public class AuthService {
 
         HttpEntity<Void> request = new HttpEntity<>(headers);
 
-        String url = adminBaseUrl +
-                "/users/" + userId + "/role-mappings/realm";
+        String url = adminBaseUrl + "/users/" + userId + "/role-mappings/realm";
 
-        ResponseEntity<List> response =
+        ResponseEntity<List<Map<String, Object>>> response =
                 restTemplate.exchange(
                         url,
                         HttpMethod.GET,
                         request,
-                        List.class
+                        new ParameterizedTypeReference<>() {}
                 );
 
         List<Map<String, Object>> roles = response.getBody();
@@ -349,6 +349,7 @@ public class AuthService {
 
         return roles.stream()
                 .map(r -> (String) r.get("name"))
+                .filter(name -> name.startsWith("ROLE_"))
                 .toList();
     }
 
@@ -644,7 +645,7 @@ public class AuthService {
             }
 
             return new ResLoginDTO.UserAccount(
-                    employeeId, 
+                    employeeId,
                     username,
                     email,
                     roles,

@@ -213,6 +213,33 @@ public class EmployeeService {
         }
     }
 
+    @Transactional
+    public ResEmployeeDTO updateEmployee(UUID id, ReqUpdateEmployeeDTO req) {
+
+        Employee employee = getEmployeeOrThrow(id);
+
+        if (req.getFullName() != null) employee.setFullName(req.getFullName());
+        if (req.getEmail() != null) employee.setEmail(req.getEmail());
+        if (req.getPhone() != null) employee.setPhone(req.getPhone());
+        if (req.getGender() != null) employee.setGender(req.getGender());
+
+        if (req.getOrganizationId() != null) employee.setOrganizationId(req.getOrganizationId());
+        if (req.getPositionId() != null) employee.setPositionId(req.getPositionId());
+        if (req.getManagerId() != null) employee.setManagerId(req.getManagerId());
+        if (req.getShiftId() != null) employee.setShiftId(req.getShiftId());
+
+        if (req.getHireDate() != null) employee.setHireDate(req.getHireDate());
+        if (req.getProbationEndDate() != null) employee.setProbationEndDate(req.getProbationEndDate());
+        if (req.getConfirmedDate() != null) employee.setConfirmedDate(req.getConfirmedDate());
+
+        if (req.getTerminationDate() != null) employee.setTerminationDate(req.getTerminationDate());
+        if (req.getTerminationReason() != null) employee.setTerminationReason(req.getTerminationReason());
+
+        employeeRepository.save(employee);
+
+        return employeeMapper.convertToResEmployeeDTO(employee);
+    }
+
     // ================= LIST (PAGINATION) =================
     public ResultPaginationDTO handleListEmployee(
             Specification<Employee> spec,
@@ -321,6 +348,9 @@ public class EmployeeService {
         String currentUserId = SecurityUtil.getCurrentUserId();
         List<String> currentUserRoles = SecurityUtil.getCurrentUserRoles();
 
+        System.out.println("Current user id keycloak: " + currentUserId);
+        System.out.println(currentUserRoles.stream().toList());
+
         boolean isSuperAdmin = currentUserRoles.contains("ROLE_SUPER_ADMIN");
         boolean isHrAdmin = currentUserRoles.contains("ROLE_HR_ADMIN");
 
@@ -334,6 +364,7 @@ public class EmployeeService {
 
         List<String> targetRoles =
                 authClient.getUserRoles(employee.getKeycloakUserId());
+
 
         if (!isSuperAdmin && targetRoles.contains("ROLE_SUPER_ADMIN")) {
             throw new ForbiddenException("Cannot modify SUPER_ADMIN");

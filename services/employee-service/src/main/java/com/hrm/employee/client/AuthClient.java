@@ -30,16 +30,16 @@ public interface AuthClient {
     @PutMapping("/api/auth/users/{id}/enable")
     void enableUser(@PathVariable("id") String id);
 
-    @GetMapping("/api/auth/users/{id}/roles")
+    @GetMapping("/api/auth/internal/users/{id}/roles")
     List<String> getUserRoles(@PathVariable("id") String id);
 
-    @PutMapping("/api/auth/users/{id}/roles")
+    @PutMapping("/api/auth/internal/users/{id}/roles")
     void updateUserRoles(
             @PathVariable("id") String id,
             @RequestBody List<String> roles
     );
 
-    @PutMapping("/api/auth/users/{id}/change-password")
+    @PutMapping("/api/auth/internal/users/{id}/change-password")
     void changePassword(
             @PathVariable("id") String id,
             @RequestBody ReqChangePasswordDTO request

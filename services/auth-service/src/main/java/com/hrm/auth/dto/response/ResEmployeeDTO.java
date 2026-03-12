@@ -11,10 +11,11 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@ToString
 public class ResEmployeeDTO {
 
     private UUID id;
+
+    private String keycloakUserId;
 
     private String employeeCode;
 

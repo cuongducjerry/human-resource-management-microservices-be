@@ -30,7 +30,7 @@ public class FormatRestResponse implements ResponseBodyAdvice<Object> {
         ).orElse("");
 
         // Cancel WRAP internal API
-        if (path.startsWith("/api/internal/")) {
+        if (path.startsWith("/api/auth/internal/")) {
             return false;
         }
 
