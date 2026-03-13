@@ -71,6 +71,14 @@ public class WorkShiftService {
         return workShiftMapper.toDTO(shift);
     }
 
+    public List<ResWorkShiftDTO> getAll() {
+
+        return workShiftRepository.findAll()
+                .stream()
+                .map(workShiftMapper::toDTO)
+                .toList();
+    }
+
     // ===== DELETE (SOFT) =====
     @Transactional
     public void delete(UUID id) {

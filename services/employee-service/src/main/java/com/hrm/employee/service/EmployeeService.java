@@ -213,6 +213,17 @@ public class EmployeeService {
         }
     }
 
+
+    public List<ResEmployeeDTO> getAllActiveEmployees() {
+
+        List<Employee> employees =
+                employeeRepository.findByStatus(EmployeeStatus.ACTIVE);
+
+        return employees.stream()
+                .map(employeeMapper::convertToResEmployeeDTO)
+                .toList();
+    }
+
     @Transactional
     public ResEmployeeDTO updateEmployee(UUID id, ReqUpdateEmployeeDTO req) {
 
@@ -399,7 +410,7 @@ public class EmployeeService {
             }
 
             default -> {
-                // PROBATION, ON_LEAVE
+                // PROBATION, ON_LEAVE, INACTIVE
             }
         }
 
@@ -407,14 +418,12 @@ public class EmployeeService {
         employeeRepository.save(employee);
 
         // ===== Sync Keycloak =====
-        if (newStatus == EmployeeStatus.PROBATION
-                || newStatus == EmployeeStatus.ACTIVE
-                || newStatus == EmployeeStatus.ON_LEAVE) {
+        if (newStatus == EmployeeStatus.ACTIVE || newStatus == EmployeeStatus.ON_LEAVE) {
 
             authClient.enableUser(employee.getKeycloakUserId());
 
         } else {
-            // TERMINATED or RESIGNED
+            // TERMINATED or RESIGNED or INACTIVE
             authClient.disableUser(employee.getKeycloakUserId());
         }
 
@@ -565,7 +574,8 @@ public class EmployeeService {
 
             case PROBATION -> {
                 if (target != EmployeeStatus.ACTIVE &&
-                        target != EmployeeStatus.TERMINATED) {
+                        target != EmployeeStatus.TERMINATED &&
+                        target != EmployeeStatus.INACTIVE) {
                     throw new BadRequestException("Invalid status transition");
                 }
             }
@@ -573,14 +583,16 @@ public class EmployeeService {
             case ACTIVE -> {
                 if (target != EmployeeStatus.ON_LEAVE &&
                         target != EmployeeStatus.RESIGNED &&
-                        target != EmployeeStatus.TERMINATED) {
+                        target != EmployeeStatus.TERMINATED &&
+                        target != EmployeeStatus.INACTIVE) {
                     throw new BadRequestException("Invalid status transition");
                 }
             }
 
             case ON_LEAVE -> {
                 if (target != EmployeeStatus.ACTIVE &&
-                        target != EmployeeStatus.RESIGNED) {
+                        target != EmployeeStatus.RESIGNED &&
+                        target != EmployeeStatus.INACTIVE) {
                     throw new BadRequestException("Invalid status transition");
                 }
             }

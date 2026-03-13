@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -31,6 +32,14 @@ public class WorkShiftController {
             @Valid @RequestBody ReqCreateWorkShiftDTO request) {
 
         return ResponseEntity.status(HttpStatus.CREATED).body(service.create(request));
+    }
+
+    @GetMapping("/all")
+    @PreAuthorize("hasAuthority('WORKSHIFT_LIST')")
+    @ApiMessage("Fetch all work shifts")
+    public ResponseEntity<List<ResWorkShiftDTO>> getAll() {
+
+        return ResponseEntity.ok(service.getAll());
     }
 
     // ===== UPDATE =====

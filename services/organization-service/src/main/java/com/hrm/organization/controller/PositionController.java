@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -43,6 +44,16 @@ public class PositionController {
     ) {
         return ResponseEntity.status(HttpStatus.OK).body(
                 positionService.getAll(organizationId, search, pageable)
+        );
+    }
+
+    @GetMapping("/all")
+    @PreAuthorize("hasAuthority('POSITION_LIST')")
+    @ApiMessage("Fetch all positions")
+    public ResponseEntity<List<ResPositionDTO>> getAllPositions() {
+
+        return ResponseEntity.ok(
+                positionService.getAllPositions()
         );
     }
 

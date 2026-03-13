@@ -132,6 +132,15 @@ public class PositionService {
         positionRepository.delete(position);
     }
 
+    @Transactional
+    public List<ResPositionDTO> getAllPositions() {
+
+        return positionRepository.findAll()
+                .stream()
+                .map(positionMapper::convertToResPositionDTO)
+                .toList();
+    }
+
     // ================= PRIVATE COMMON METHOD =================
     private Position findPositionById(UUID id) {
         return positionRepository.findById(id)

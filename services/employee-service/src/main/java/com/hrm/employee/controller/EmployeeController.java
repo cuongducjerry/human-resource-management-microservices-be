@@ -21,6 +21,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -55,6 +56,16 @@ public class EmployeeController {
 
         return ResponseEntity.status(HttpStatus.OK).body(
                 employeeService.handleListEmployee(spec, pageable));
+    }
+
+    @GetMapping("/active")
+    @PreAuthorize("hasAuthority('EMPLOYEE_LIST')")
+    @ApiMessage("Get all active employees")
+    public ResponseEntity<List<ResEmployeeDTO>> getAllActiveEmployees() {
+
+        return ResponseEntity.ok(
+                employeeService.getAllActiveEmployees()
+        );
     }
 
     // ================= VIEW DETAIL =================

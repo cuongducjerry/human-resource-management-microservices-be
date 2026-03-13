@@ -2,6 +2,7 @@ package com.hrm.employee.repository;
 
 
 import com.hrm.employee.entity.Employee;
+import com.hrm.employee.util.constant.EmployeeStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -57,4 +58,6 @@ public interface EmployeeRepository extends JpaRepository<Employee, UUID>, JpaSp
        AND DAY(e.dateOfBirth) = :day
        """)
     List<Employee> findByMonthAndDay(int month, int day);
+
+    List<Employee> findByStatus(EmployeeStatus status);
 }
