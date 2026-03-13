@@ -4,6 +4,7 @@ import com.hrm.employee.dto.request.ReqCreateContractDTO;
 import com.hrm.employee.dto.request.ReqUpdateContractDTO;
 import com.hrm.employee.dto.request.ReqUpdateContractStatusDTO;
 import com.hrm.employee.dto.response.ResContractDTO;
+import com.hrm.employee.dto.response.ResEmployeeDTO;
 import com.hrm.employee.dto.response.ResultPaginationDTO;
 import com.hrm.employee.service.ContractService;
 import com.hrm.employee.util.annotation.ApiMessage;
@@ -17,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -35,6 +37,16 @@ public class ContractController {
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(contractService.create(req));
+    }
+
+    @GetMapping("/available-employees")
+    @PreAuthorize("hasAuthority('CONTRACT_CREATE')")
+    @ApiMessage("Get employees available for contract")
+    public ResponseEntity<List<ResEmployeeDTO>> getAvailableEmployees() {
+
+        return ResponseEntity.ok(
+                contractService.getEmployeesAvailableForContract()
+        );
     }
 
     // ================= LIST =================

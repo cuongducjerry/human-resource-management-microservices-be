@@ -172,6 +172,7 @@ public class OrganizationService {
                     ResOrganizationTreeDTO.builder()
                             .id(org.getId())
                             .name(org.getName())
+                            .status(org.getStatus().toString())
                             .children(new ArrayList<>())
                             .build()
             );

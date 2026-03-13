@@ -15,6 +15,7 @@ public class ResOrganizationTreeDTO {
 
     private UUID id;
     private String name;
+    private String status;
 
     @Builder.Default
     private List<ResOrganizationTreeDTO> children = new ArrayList<>();

@@ -6,9 +6,12 @@ import com.hrm.employee.dto.response.ResContractDTO;
 import com.hrm.employee.dto.response.ResEmployeeDTO;
 import com.hrm.employee.dto.response.ResultPaginationDTO;
 import com.hrm.employee.entity.Contract;
+import com.hrm.employee.entity.Employee;
 import com.hrm.employee.mapper.ContractMapper;
+import com.hrm.employee.mapper.EmployeeMapper;
 import com.hrm.employee.mapper.PaginationMapper;
 import com.hrm.employee.repository.ContractRepository;
+import com.hrm.employee.repository.EmployeeRepository;
 import com.hrm.employee.specification.ContractSpecification;
 import com.hrm.employee.util.constant.ContractStatus;
 import com.hrm.employee.util.constant.ContractType;
@@ -34,7 +37,9 @@ public class ContractService {
 
     private final ContractRepository contractRepository;
     private final PaginationMapper paginationMapper;
+    private final EmployeeRepository employeeRepository;
     private final ContractMapper contractMapper;
+    private final EmployeeMapper employeeMapper;
 
     // ================= CREATE =================
     public ResContractDTO create(ReqCreateContractDTO req) {
@@ -186,6 +191,21 @@ public class ContractService {
         }
 
         return this.contractMapper.convertToResContractDTO(contract);
+    }
+
+    public List<ResEmployeeDTO> getEmployeesAvailableForContract() {
+
+        List<Employee> employees = employeeRepository.findAll();
+
+        return employees.stream()
+                .filter(emp ->
+                        !contractRepository.existsByEmployeeIdAndStatus(
+                                emp.getId(),
+                                ContractStatus.ACTIVE
+                        )
+                )
+                .map(employeeMapper::convertToResEmployeeDTO)
+                .collect(Collectors.toList());
     }
 
     public ResContractDTO getActiveContractByEmployee(UUID employeeId) {

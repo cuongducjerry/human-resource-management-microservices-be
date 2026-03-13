@@ -43,4 +43,5 @@ public interface ContractRepository extends
        """)
     List<Contract> findContractsExpiringBetween(LocalDate today, LocalDate threshold);
 
+
 }
