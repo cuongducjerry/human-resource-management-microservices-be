@@ -13,9 +13,6 @@ import java.util.UUID;
 public class ReqCreateLeaveRequestDTO {
 
     @NotNull
-    private UUID employeeId;
-
-    @NotNull
     private LeaveType leaveType;
 
     @NotNull

@@ -32,6 +32,18 @@ public class LeaveSummaryController {
         return ResponseEntity.ok(service.list(employeeId, month, year, pageable));
     }
 
+    @GetMapping("/personal")
+    @PreAuthorize("hasAuthority('LEAVE_SUMMARY_LIST_PERSONAL')")
+    @ApiMessage("Fetch leave summary list (employee, manager)")
+    public ResponseEntity<ResultPaginationDTO> listSummaryPersonal(
+            @RequestParam(required = false) UUID employeeId,
+            @RequestParam(required = false) Integer month,
+            @RequestParam(required = false) Integer year,
+            Pageable pageable
+    ) {
+        return ResponseEntity.ok(service.listLeaveSummaryPersonal(employeeId, month, year, pageable));
+    }
+
     // ================= DETAIL =================
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('LEAVE_SUMMARY_VIEW')")

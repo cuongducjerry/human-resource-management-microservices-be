@@ -67,6 +67,30 @@ public class AttendanceController {
                 ));
     }
 
+    // ================= LIST =================
+    @GetMapping("/personal")
+    @PreAuthorize("hasAuthority('ATTENDANCE_LIST_PERSONAL')")
+    @ApiMessage("Fetch attendance list (employee, manager)")
+    public ResponseEntity<ResultPaginationDTO> listAttendanceForEmployee(
+            @RequestParam(required = false) UUID employeeId,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate startDate,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate endDate,
+            Pageable pageable
+    ) {
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(attendanceService.listAttendancePersonal(
+                        employeeId,
+                        startDate,
+                        endDate,
+                        pageable
+                ));
+    }
+
     // ================= VIEW DETAIL =================
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('ATTENDANCE_VIEW')")

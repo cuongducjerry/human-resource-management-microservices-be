@@ -139,6 +139,42 @@ public class AttendanceSummaryService {
         );
     }
 
+    // ================= LIST PERSONAL =================
+    public ResultPaginationDTO listPersonal(
+            UUID employeeId,
+            Integer month,
+            Integer year,
+            Pageable pageable
+    ) {
+
+        UUID currentEmployeeId = UUID.fromString(SecurityUtil.getCurrentEmployeeId());
+
+        if (SecurityUtil.hasRole("ROLE_EMPLOYEE") || SecurityUtil.hasRole("ROLE_MANAGER")) {
+            employeeId = currentEmployeeId;
+        }
+
+        Specification<AttendanceSummary> spec =
+                AttendanceSummarySpecification
+                        .filter(employeeId, month, year);
+
+        Page<AttendanceSummary> page =
+                attendanceSummaryRepository.findAll(spec, pageable);
+
+        List<ResAttendanceSummaryDTO> list =
+                page.getContent()
+                        .stream()
+                        .map(attendanceSummaryMapper::toDTO)
+                        .toList();
+
+        return paginationMapper.convertToResultPaginationDTO(
+                pageable.getPageNumber() + 1,
+                pageable.getPageSize(),
+                page.getTotalPages(),
+                page.getTotalElements(),
+                list
+        );
+    }
+
     // ================= DETAIL =================
     public ResAttendanceSummaryDTO getById(UUID id) {
 

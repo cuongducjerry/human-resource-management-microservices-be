@@ -224,6 +224,46 @@ public class AttendanceService {
                 pageNumber, pageSize, totalPages, totalElements, list);
     }
 
+    public ResultPaginationDTO listAttendancePersonal(
+            UUID employeeId,
+            LocalDate startDate,
+            LocalDate endDate,
+            Pageable pageable
+    ) {
+
+        UUID currentEmployeeId =
+                UUID.fromString(SecurityUtil.getCurrentEmployeeId());
+
+        Specification<Attendance> spec =
+                AttendanceSpecification.byEmployee(employeeId)
+                        .and(AttendanceSpecification.byDateRange(startDate, endDate));
+
+        if (SecurityUtil.hasRole("ROLE_EMPLOYEE") || SecurityUtil.hasRole("ROLE_MANAGER")) {
+
+            spec = spec.and(
+                    (root, query, cb) ->
+                            cb.equal(root.get("employeeId"), currentEmployeeId)
+            );
+        }
+
+
+        Page<Attendance> page =
+                attendanceRepository.findAll(spec, pageable);
+
+        int pageNumber = pageable.getPageNumber() + 1;
+        int pageSize = pageable.getPageSize();
+        int totalPages = page.getTotalPages();
+        long totalElements = page.getTotalElements();
+
+        List<ResAttendanceDTO> list = page.getContent()
+                .stream()
+                .map(attendanceMapper::toDTO)
+                .toList();
+
+        return paginationMapper.convertToResultPaginationDTO(
+                pageNumber, pageSize, totalPages, totalElements, list);
+    }
+
     public ResAttendanceDTO getById(UUID id) {
 
         Attendance attendance = attendanceRepository.findById(id)

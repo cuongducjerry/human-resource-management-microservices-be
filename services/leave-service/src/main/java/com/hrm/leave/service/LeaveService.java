@@ -22,8 +22,8 @@ import com.hrm.leave.util.constant.LeaveStatus;
 import com.hrm.leave.util.constant.LeaveType;
 import com.hrm.leave.util.constant.NotificationType;
 import com.hrm.leave.util.error.BadRequestException;
+import com.hrm.leave.util.error.ForbiddenException;
 import com.hrm.leave.util.error.IdInvalidException;
-import jakarta.ws.rs.ForbiddenException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -53,9 +53,12 @@ public class LeaveService {
     // ================= CREATE =================
     public ResLeaveRequestDTO create(ReqCreateLeaveRequestDTO req) {
 
-        validateEmployee(req.getEmployeeId());
+        String id = SecurityUtil.getCurrentEmployeeId();
+        UUID employeeId = UUID.fromString(id);
+
+        validateEmployee(employeeId);
         validateDateRange(req.getStartDate(), req.getEndDate());
-        validateOverlap(req.getEmployeeId(),
+        validateOverlap(employeeId,
                 req.getStartDate(),
                 req.getEndDate());
 
@@ -65,16 +68,16 @@ public class LeaveService {
 
         if (req.getLeaveType() != LeaveType.UNPAID) {
             LeaveBalance balance =
-                    getLeaveBalance(req.getEmployeeId(), req.getLeaveType());
+                    getLeaveBalance(employeeId, req.getLeaveType());
 
             validateSufficientBalance(balance, totalDays);
         }
 
         ResEmployeeDTO employee =
-                employeeClient.getInternal(req.getEmployeeId());
+                employeeClient.getInternal(employeeId);
 
         LeaveRequest leave = LeaveRequest.builder()
-                .employeeId(req.getEmployeeId())
+                .employeeId(employeeId)
                 .leaveType(req.getLeaveType())
                 .startDate(req.getStartDate())
                 .endDate(req.getEndDate())
@@ -109,7 +112,7 @@ public class LeaveService {
     // ================= APPROVE =================
     public void approve(UUID leaveId) {
 
-        String approverId = SecurityUtil.getCurrentUserId();
+        String approverId = SecurityUtil.getCurrentEmployeeId();
 
         LeaveRequest leave = getPendingLeave(leaveId);
 
@@ -280,6 +283,40 @@ public class LeaveService {
                 pageNumber, pageSize, totalPages, totalElements, list);
     }
 
+    public ResultPaginationDTO handleListLeaveRequestPesonal(
+            Specification<LeaveRequest> spec,
+            Pageable pageable) {
+
+        UUID currentEmployeeId =
+                UUID.fromString(SecurityUtil.getCurrentEmployeeId());
+
+        // ===== EMPLOYEE only views their own leave =====
+        if (SecurityUtil.hasRole("ROLE_EMPLOYEE") || SecurityUtil.hasRole("ROLE_MANAGER")) {
+
+            Specification<LeaveRequest> employeeSpec =
+                    (root, query, cb) ->
+                            cb.equal(root.get("employeeId"), currentEmployeeId);
+
+            spec = spec.and(employeeSpec);
+        }
+
+        // ===== The manager only watches the subordinates leave records =====
+        Page<LeaveRequest> page = leaveRequestRepository.findAll(spec, pageable);
+
+        int pageNumber = pageable.getPageNumber() + 1;
+        int pageSize = pageable.getPageSize();
+        int totalPages = page.getTotalPages();
+        long totalElements = page.getTotalElements();
+
+        List<ResLeaveRequestDTO> list = page.getContent()
+                .stream()
+                .map(leaveMapper::toDTO)
+                .toList();
+
+        return paginationMapper.convertToResultPaginationDTO(
+                pageNumber, pageSize, totalPages, totalElements, list);
+    }
+
     public List<ResLeaveBalanceDTO> getBalanceByEmployee(UUID employeeId) {
 
         UUID currentEmployeeId =
@@ -298,7 +335,7 @@ public class LeaveService {
             List<UUID> subordinates =
                     employeeClient.getSubordinates(currentEmployeeId);
 
-            if (!subordinates.contains(employeeId)) {
+            if (!employeeId.equals(currentEmployeeId) && !subordinates.contains(employeeId)) {
                 throw new ForbiddenException("You cannot view this employee leave balance");
             }
         }

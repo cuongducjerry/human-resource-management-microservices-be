@@ -32,6 +32,18 @@ public class AttendanceSummaryController {
         return ResponseEntity.ok(service.list(employeeId, month, year, pageable));
     }
 
+    @GetMapping("/personal")
+    @PreAuthorize("hasAuthority('ATTENDANCE_SUMMARY_LIST_PERSONAL')")
+    @ApiMessage("Fetch attendance summary list (employee, summary)")
+    public ResponseEntity<ResultPaginationDTO> listAttendanceSummaryPersonal(
+            @RequestParam(required = false) UUID employeeId,
+            @RequestParam(required = false) Integer month,
+            @RequestParam(required = false) Integer year,
+            Pageable pageable
+    ) {
+        return ResponseEntity.ok(service.listPersonal(employeeId, month, year, pageable));
+    }
+
     // ================= DETAIL =================
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('ATTENDANCE_SUMMARY_VIEW')")

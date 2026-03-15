@@ -1,5 +1,6 @@
 package com.hrm.payroll.service;
 
+import com.hrm.payroll.client.EmployeeClient;
 import com.hrm.payroll.dto.response.ResLeaveSummaryDTO;
 import com.hrm.payroll.dto.response.ResultPaginationDTO;
 import com.hrm.payroll.entity.LeaveSummary;
@@ -9,6 +10,8 @@ import com.hrm.payroll.mapper.LeaveSummaryMapper;
 import com.hrm.payroll.mapper.PaginationMapper;
 import com.hrm.payroll.repository.LeaveSummaryRepository;
 import com.hrm.payroll.specification.LeaveSummarySpecification;
+import com.hrm.payroll.util.SecurityUtil;
+import com.hrm.payroll.util.error.ForbiddenException;
 import com.hrm.payroll.util.error.IdInvalidException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -28,6 +31,7 @@ public class LeaveSummaryService {
     private final LeaveSummaryRepository leaveSummaryRepository;
     private final LeaveSummaryMapper leaveSummaryMapper;
     private final PaginationMapper paginationMapper;
+    private final EmployeeClient employeeClient;
 
     // ================= EVENT HANDLER =================
     @Transactional
@@ -114,9 +118,64 @@ public class LeaveSummaryService {
             Pageable pageable
     ) {
 
+        String currentEmployeeId = SecurityUtil.getCurrentEmployeeId();
+
+        // EMPLOYEE
+        if (SecurityUtil.hasRole("ROLE_EMPLOYEE")) {
+            employeeId = UUID.fromString(currentEmployeeId);
+        }
+
+        // MANAGER
+        if (SecurityUtil.hasRole("ROLE_MANAGER")) {
+
+            List<UUID> subordinates =
+                    employeeClient.getSubordinates(UUID.fromString(currentEmployeeId));
+
+            if (employeeId == null) {
+                subordinates.add(UUID.fromString(currentEmployeeId));
+            } else if (!employeeId.equals(UUID.fromString(currentEmployeeId))
+                    && !subordinates.contains(employeeId)) {
+                throw new ForbiddenException("You cannot view this employee data");
+            }
+        }
+
         Specification<LeaveSummary> spec =
-                LeaveSummarySpecification
-                        .filter(employeeId, month, year);
+                LeaveSummarySpecification.filter(employeeId, month, year);
+
+        Page<LeaveSummary> page =
+                leaveSummaryRepository.findAll(spec, pageable);
+
+        List<ResLeaveSummaryDTO> list =
+                page.getContent()
+                        .stream()
+                        .map(leaveSummaryMapper::toDTO)
+                        .toList();
+
+        return paginationMapper.convertToResultPaginationDTO(
+                pageable.getPageNumber() + 1,
+                pageable.getPageSize(),
+                page.getTotalPages(),
+                page.getTotalElements(),
+                list
+        );
+    }
+
+    public ResultPaginationDTO listLeaveSummaryPersonal(
+            UUID employeeId,
+            Integer month,
+            Integer year,
+            Pageable pageable
+    ) {
+
+        String currentEmployeeId = SecurityUtil.getCurrentEmployeeId();
+
+        // EMPLOYEE
+        if (SecurityUtil.hasRole("ROLE_EMPLOYEE") || SecurityUtil.hasRole("ROLE_MANAGER")) {
+            employeeId = UUID.fromString(currentEmployeeId);
+        }
+
+        Specification<LeaveSummary> spec =
+                LeaveSummarySpecification.filter(employeeId, month, year);
 
         Page<LeaveSummary> page =
                 leaveSummaryRepository.findAll(spec, pageable);

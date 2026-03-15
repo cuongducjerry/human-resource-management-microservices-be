@@ -50,12 +50,29 @@ public class LeaveController {
             @RequestParam(required = false) LeaveType type,
             Pageable pageable
     ) {
-
         Specification<LeaveRequest> spec =
                 LeaveSpecification.filter(keyword, status, type);
 
         return ResponseEntity.ok(
                 leaveService.handleListLeaveRequest(spec, pageable)
+        );
+    }
+
+    // ================= LIST =================
+    @GetMapping("/personal")
+    @PreAuthorize("hasAuthority('LEAVE_REQUEST_LIST_PERSONAL')")
+    @ApiMessage("Fetch leave request list (employee, manager)")
+    public ResponseEntity<ResultPaginationDTO> getAllLeavePersonal(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) LeaveStatus status,
+            @RequestParam(required = false) LeaveType type,
+            Pageable pageable
+    ) {
+        Specification<LeaveRequest> spec =
+                LeaveSpecification.filter(keyword, status, type);
+
+        return ResponseEntity.ok(
+                leaveService.handleListLeaveRequestPesonal(spec, pageable)
         );
     }
 
