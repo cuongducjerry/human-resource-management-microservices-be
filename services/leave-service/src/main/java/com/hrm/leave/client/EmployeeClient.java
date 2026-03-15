@@ -24,5 +24,7 @@ public interface EmployeeClient {
     @GetMapping("/api/internal/employees/hr-admins")
     List<UUID> getHrAdminIds();
 
+    @GetMapping("/api/internal/employees/ids")
+    public List<UUID> getAllActiveEmployeeIds();
 
 }

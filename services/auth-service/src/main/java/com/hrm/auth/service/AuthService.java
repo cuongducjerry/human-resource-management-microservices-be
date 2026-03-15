@@ -6,13 +6,27 @@ import com.hrm.auth.client.EmployeeClient;
 import com.hrm.auth.dto.request.ReqCreateKeycloakUserDTO;
 import com.hrm.auth.dto.response.ResEmployeeDTO;
 import com.hrm.auth.dto.response.ResLoginDTO;
+import com.hrm.auth.dto.response.ResultPaginationDTO;
+import com.hrm.auth.entity.PasswordResetRequest;
+import com.hrm.auth.event.NotificationEvent;
+import com.hrm.auth.mapper.PaginationMapper;
+import com.hrm.auth.repository.PasswordResetRequestRepository;
 import com.hrm.auth.util.SecurityUtil;
+import com.hrm.auth.util.constant.NotificationType;
+import com.hrm.auth.util.constant.Status;
 import com.hrm.auth.util.error.InvalidLoginException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
@@ -20,6 +34,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.net.URI;
+import java.time.Instant;
 import java.util.*;
 
 @Service
@@ -29,6 +44,9 @@ public class AuthService {
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
     private final EmployeeClient employeeClient;
+    private final PasswordResetRequestRepository passwordResetRequestRepository;
+    private final ApplicationEventPublisher eventPublisher;
+    private final PaginationMapper paginationMapper;
 
     @Value("${keycloak.token-url}")
     private String tokenUrl;
@@ -674,4 +692,214 @@ public class AuthService {
 
         return (String) response.getBody().get("username");
     }
+
+    public void createResetRequest(String email) {
+
+        String adminToken = getAdminAccessToken();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(adminToken);
+
+        ResponseEntity<List<Map<String, Object>>> response =
+                restTemplate.exchange(
+                        adminBaseUrl + "/users?email=" + email,
+                        HttpMethod.GET,
+                        new HttpEntity<>(headers),
+                        new ParameterizedTypeReference<>() {}
+                );
+
+        List<Map<String, Object>> users = response.getBody();
+
+        if (users == null || users.isEmpty()) {
+            throw new RuntimeException("User not found");
+        }
+
+        Map<String, Object> user = users.get(0);
+
+        String keycloakId = (String) user.get("id");
+
+        Map<String, Object> attributes =
+                (Map<String, Object>) user.get("attributes");
+
+        UUID employeeId = null;
+
+        if (attributes != null && attributes.containsKey("employeeId")) {
+
+            List<String> empIds =
+                    (List<String>) attributes.get("employeeId");
+
+            employeeId = UUID.fromString(empIds.get(0));
+        }
+
+        Optional<PasswordResetRequest> optional =
+                passwordResetRequestRepository.findByKeycloakId(keycloakId);
+
+        PasswordResetRequest req;
+
+        if (optional.isPresent()) {
+
+            req = optional.get();
+
+            req.setStatus(Status.PENDING);
+            req.setApprovedBy(null);
+            req.setApprovedAt(null);
+
+        } else {
+
+            req = PasswordResetRequest.builder()
+                    .keycloakId(keycloakId)
+                    .employeeId(employeeId)
+                    .email(email)
+                    .status(Status.PENDING)
+                    .build();
+        }
+
+        passwordResetRequestRepository.save(req);
+    }
+
+    public ResultPaginationDTO handleListResetRequests(
+            Specification<PasswordResetRequest> spec,
+            Pageable pageable
+    ) {
+
+        Specification<PasswordResetRequest> orderSpec =
+                (root, query, cb) -> {
+
+                    query.orderBy(
+
+                            cb.asc(
+                                    cb.selectCase()
+                                            .when(cb.equal(root.get("status"), Status.PENDING), 0)
+                                            .when(cb.equal(root.get("status"), Status.APPROVED), 1)
+                                            .otherwise(2)
+                            ),
+
+                            cb.desc(root.get("approvedAt"))
+
+                    );
+
+                    return spec == null ? cb.conjunction() : spec.toPredicate(root, query, cb);
+                };
+
+        Page<PasswordResetRequest> page =
+                passwordResetRequestRepository.findAll(orderSpec, pageable);
+
+        int pageNumber = pageable.getPageNumber() + 1;
+        int pageSize = pageable.getPageSize();
+        int totalPages = page.getTotalPages();
+        long totalElements = page.getTotalElements();
+
+        List<PasswordResetRequest> list = page.getContent();
+
+        return paginationMapper.convertToResultPaginationDTO(
+                pageNumber,
+                pageSize,
+                totalPages,
+                totalElements,
+                list
+        );
+    }
+
+    @Transactional
+    public void approveResetRequest(UUID id) {
+
+        PasswordResetRequest req =
+                passwordResetRequestRepository.findById(id)
+                        .orElseThrow();
+
+        if (req.getStatus() != Status.PENDING) {
+            throw new RuntimeException("Request already handled");
+        }
+
+        String newPassword = generateRandomPassword();
+
+        updateKeycloakPassword(req.getKeycloakId(), newPassword);
+
+        req.setStatus(Status.APPROVED);
+        req.setApprovedAt(Instant.now());
+        req.setApprovedBy(SecurityUtil.getCurrentUserEmail());
+
+        passwordResetRequestRepository.save(req);
+
+        eventPublisher.publishEvent(
+                NotificationEvent.builder()
+                        .eventId(UUID.randomUUID().toString())
+                        .employeeId("")
+                        .title("Password Reset (HRM SYSTEM)")
+                        .content("Your new password: " + newPassword)
+                        .type(NotificationType.SYSTEM)
+                        .email(req.getEmail())
+                        .sendEmail(true)
+                        .build()
+        );
+
+    }
+
+    @Transactional
+    public void rejectResetRequest(UUID id) {
+
+        PasswordResetRequest req =
+                passwordResetRequestRepository.findById(id)
+                        .orElseThrow();
+
+        if (req.getStatus() != Status.PENDING) {
+            throw new RuntimeException("Request already handled");
+        }
+
+        req.setStatus(Status.REJECTED);
+        req.setApprovedAt(Instant.now());
+        req.setApprovedBy(SecurityUtil.getCurrentUserEmail());
+
+        passwordResetRequestRepository.save(req);
+
+        // send email notify rejected
+        eventPublisher.publishEvent(
+                NotificationEvent.builder()
+                        .eventId(UUID.randomUUID().toString())
+                        .employeeId("")
+                        .title("Password Reset Request Rejected (HRM SYSTEM)")
+                        .content("Your password reset request has been rejected by administrator.")
+                        .type(NotificationType.SYSTEM)
+                        .email(req.getEmail())
+                        .sendEmail(true)
+                        .build()
+        );
+    }
+
+    private String generateRandomPassword() {
+
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+        StringBuilder password = new StringBuilder();
+
+        Random random = new Random();
+
+        for (int i = 0; i < 10; i++) {
+            password.append(chars.charAt(random.nextInt(chars.length())));
+        }
+
+        return password.toString();
+    }
+
+    private void updateKeycloakPassword(String userId, String password) {
+
+        String adminToken = getAdminAccessToken();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(adminToken);
+
+        Map<String, Object> pass = new HashMap<>();
+        pass.put("type", "password");
+        pass.put("value", password);
+        pass.put("temporary", false);
+
+        restTemplate.exchange(
+                adminBaseUrl + "/users/" + userId + "/reset-password",
+                HttpMethod.PUT,
+                new HttpEntity<>(pass, headers),
+                Void.class
+        );
+    }
+
 }

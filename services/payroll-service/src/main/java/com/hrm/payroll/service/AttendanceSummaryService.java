@@ -1,5 +1,6 @@
 package com.hrm.payroll.service;
 
+import com.hrm.payroll.client.EmployeeClient;
 import com.hrm.payroll.dto.response.ResAttendanceSummaryDTO;
 import com.hrm.payroll.dto.response.ResultPaginationDTO;
 import com.hrm.payroll.entity.AttendanceSummary;
@@ -8,7 +9,9 @@ import com.hrm.payroll.mapper.AttendanceSummaryMapper;
 import com.hrm.payroll.mapper.PaginationMapper;
 import com.hrm.payroll.repository.AttendanceSummaryRepository;
 import com.hrm.payroll.specification.AttendanceSummarySpecification;
+import com.hrm.payroll.util.SecurityUtil;
 import com.hrm.payroll.util.constant.AttendanceStatus;
+import com.hrm.payroll.util.error.ForbiddenException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,6 +30,7 @@ public class AttendanceSummaryService {
     private final AttendanceSummaryRepository attendanceSummaryRepository;
     private final AttendanceSummaryMapper attendanceSummaryMapper;
     private final PaginationMapper paginationMapper;
+    private final EmployeeClient employeeClient;
 
     // ================= EVENT HANDLER =================
     @Transactional
@@ -95,6 +99,23 @@ public class AttendanceSummaryService {
             Integer year,
             Pageable pageable
     ) {
+
+        UUID currentEmployeeId = UUID.fromString(SecurityUtil.getCurrentEmployeeId());
+
+        if (SecurityUtil.hasRole("ROLE_EMPLOYEE")) {
+            employeeId = currentEmployeeId;
+        }
+
+        if (SecurityUtil.hasRole("ROLE_MANAGER")) {
+
+            List<UUID> subordinates =
+                    employeeClient.getSubordinates(currentEmployeeId);
+
+            if (employeeId != null && !subordinates.contains(employeeId)) {
+                throw new ForbiddenException("Access denied");
+            }
+
+        }
 
         Specification<AttendanceSummary> spec =
                 AttendanceSummarySpecification

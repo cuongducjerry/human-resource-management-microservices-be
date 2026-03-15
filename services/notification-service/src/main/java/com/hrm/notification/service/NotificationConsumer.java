@@ -39,6 +39,21 @@ public class NotificationConsumer {
             return;
         }
 
+        // CASE 1
+        if (event.getEmployeeId() == null || event.getEmployeeId().isBlank()) {
+
+            if (event.isSendEmail() && event.getEmail() != null) {
+                emailService.send(
+                        event.getEmail(),
+                        event.getTitle(),
+                        event.getContent()
+                );
+            }
+
+            return;
+        }
+
+        // CASE 2
         Notification noti = Notification.builder()
                 .title(event.getTitle())
                 .content(event.getContent())

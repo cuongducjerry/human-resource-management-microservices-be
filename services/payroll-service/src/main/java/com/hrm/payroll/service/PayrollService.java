@@ -1,5 +1,6 @@
 package com.hrm.payroll.service;
 
+import com.hrm.payroll.client.AuthClient;
 import com.hrm.payroll.client.EmployeeClient;
 import com.hrm.payroll.dto.response.ResContractDTO;
 import com.hrm.payroll.dto.response.ResEmployeeDTO;
@@ -47,6 +48,7 @@ public class PayrollService {
     private final AttendanceSummaryRepository attendanceSummaryRepository;
     private final LeaveSummaryRepository leaveSummaryRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final AuthClient authClient;
 
     public ResultPaginationDTO list(
             UUID employeeId,
@@ -57,7 +59,7 @@ public class PayrollService {
     ) {
 
         // nếu user là EMPLOYEE thì chỉ được xem payroll của mình
-        if (SecurityUtil.hasRole("ROLE_EMPLOYEE")) {
+        if (SecurityUtil.hasRole("ROLE_EMPLOYEE") || SecurityUtil.hasRole("ROLE_MANAGER")) {
             employeeId = UUID.fromString(SecurityUtil.getCurrentEmployeeId());
         }
 
@@ -141,6 +143,14 @@ public class PayrollService {
         List<ResPayrollDTO> result = new ArrayList<>();
 
         for (UUID employeeId : employeeIds) {
+
+            ResEmployeeDTO dto = employeeClient.getInternal(employeeId);
+            String keyCloakUuid = dto.getKeycloakUserId();
+            List<String> listRole = authClient.getUserRoles(keyCloakUuid);
+
+            if (listRole != null && (listRole.contains("ROLE_SUPER_ADMIN") || listRole.contains("ROLE_HR_ADMIN"))) {
+                continue;
+            }
 
             Payroll payroll =
                     generatePayroll(employeeId, month, year);

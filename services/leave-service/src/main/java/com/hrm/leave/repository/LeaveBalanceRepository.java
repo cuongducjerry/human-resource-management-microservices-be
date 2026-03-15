@@ -3,6 +3,8 @@ package com.hrm.leave.repository;
 import com.hrm.leave.entity.LeaveBalance;
 import com.hrm.leave.util.constant.LeaveType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -26,4 +28,12 @@ public interface LeaveBalanceRepository
             UUID employeeId,
             Integer year
     );
+
+    @Modifying
+    @Query("""
+        UPDATE LeaveBalance lb
+        SET lb.active = false
+        WHERE lb.year = :year
+    """)
+    void deactivateByYear(int year);
 }

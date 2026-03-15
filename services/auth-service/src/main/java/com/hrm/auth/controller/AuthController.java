@@ -2,18 +2,26 @@ package com.hrm.auth.controller;
 
 import com.hrm.auth.dto.request.*;
 import com.hrm.auth.dto.response.ResLoginDTO;
+import com.hrm.auth.dto.response.ResultPaginationDTO;
+import com.hrm.auth.entity.PasswordResetRequest;
 import com.hrm.auth.service.AuthService;
+import com.hrm.auth.specification.PasswordResetRequestSpecification;
 import com.hrm.auth.util.annotation.ApiMessage;
+import com.hrm.auth.util.constant.Status;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 
 @RestController
@@ -184,6 +192,50 @@ public class AuthController {
             @PathVariable String role
     ) {
         return authService.getUserIdsByRole(role);
+    }
+
+    @PostMapping("/forgot-password")
+    @ApiMessage("Submit forgot password request")
+    public ResponseEntity<Void> forgotPassword(
+            @RequestBody ReqForgotPasswordDTO request
+    ) {
+
+        authService.createResetRequest(request.getEmail());
+
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/reset-requests")
+    @PreAuthorize("hasAuthority('RESET_PASSWORD_LIST')")
+    @ApiMessage("Fetch password reset requests")
+    public ResponseEntity<ResultPaginationDTO> getAllResetPasswords(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Status status,
+            Pageable pageable
+    ) {
+
+        Specification<PasswordResetRequest> spec =
+                PasswordResetRequestSpecification.filter(keyword, status);
+
+        return ResponseEntity.status(HttpStatus.OK).body(
+                authService.handleListResetRequests(spec, pageable)
+        );
+    }
+
+    @PostMapping("/reset-requests/{id}/approve")
+    @PreAuthorize("hasAuthority('RESET_PASSWORD_APPROVE')")
+    @ApiMessage("Approve password reset request")
+    public ResponseEntity<Void> approveReset(@PathVariable UUID id) {
+        authService.approveResetRequest(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/reset-requests/{id}/reject")
+    @PreAuthorize("hasAuthority('RESET_PASSWORD_REJECT')")
+    @ApiMessage("Reject password reset request")
+    public ResponseEntity<Void> rejectReset(@PathVariable UUID id) {
+        authService.rejectResetRequest(id);
+        return ResponseEntity.ok().build();
     }
 
 }

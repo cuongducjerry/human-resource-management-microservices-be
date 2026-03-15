@@ -1,5 +1,6 @@
 package com.hrm.employee.service;
 
+import com.hrm.employee.client.AuthClient;
 import com.hrm.employee.dto.request.ReqCreateContractDTO;
 import com.hrm.employee.dto.request.ReqUpdateContractDTO;
 import com.hrm.employee.dto.response.ResContractDTO;
@@ -40,6 +41,7 @@ public class ContractService {
     private final EmployeeRepository employeeRepository;
     private final ContractMapper contractMapper;
     private final EmployeeMapper employeeMapper;
+    private final AuthClient authClient;
 
     // ================= CREATE =================
     public ResContractDTO create(ReqCreateContractDTO req) {
@@ -204,6 +206,14 @@ public class ContractService {
                                 ContractStatus.ACTIVE
                         )
                 )
+                .filter(emp -> {
+                    List<String> roles = authClient.getUserRoles(emp.getKeycloakUserId());
+
+                    return roles.stream().noneMatch(role ->
+                            role.equals("ROLE_SUPER_ADMIN") ||
+                                    role.equals("ROLE_HR_ADMIN")
+                    );
+                })
                 .map(employeeMapper::convertToResEmployeeDTO)
                 .collect(Collectors.toList());
     }

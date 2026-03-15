@@ -342,7 +342,12 @@ public class EmployeeService {
 
         if (SecurityUtil.hasRole("ROLE_MANAGER")) {
 
-            if (!employee.getManagerId().toString().equals(currentEmployeeId)) {
+            boolean isSelf = employee.getId().toString().equals(currentEmployeeId);
+
+            boolean isSubordinate = employee.getManagerId() != null &&
+                    employee.getManagerId().toString().equals(currentEmployeeId);
+
+            if (!isSelf && !isSubordinate) {
                 throw new ForbiddenException("Access denied");
             }
         }
