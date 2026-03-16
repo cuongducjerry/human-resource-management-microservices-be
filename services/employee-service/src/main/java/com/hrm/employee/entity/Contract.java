@@ -61,6 +61,9 @@ public class Contract {
 
     private String description;
 
+    @Column(name = "file_url")
+    private String fileUrl;
+
     // ===== Soft Delete =====
     @Builder.Default
     @Column(nullable = false)

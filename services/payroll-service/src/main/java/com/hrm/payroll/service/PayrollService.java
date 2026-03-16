@@ -58,18 +58,95 @@ public class PayrollService {
             Pageable pageable
     ) {
 
-        // nếu user là EMPLOYEE thì chỉ được xem payroll của mình
-        if (SecurityUtil.hasRole("ROLE_EMPLOYEE") || SecurityUtil.hasRole("ROLE_MANAGER")) {
-            employeeId = UUID.fromString(SecurityUtil.getCurrentEmployeeId());
+        UUID currentEmployeeId =
+                UUID.fromString(SecurityUtil.getCurrentEmployeeId());
+
+        List<UUID> allowedEmployeeIds = null;
+
+        // ===== EMPLOYEE =====
+        if (SecurityUtil.hasRole("ROLE_EMPLOYEE")) {
+
+            allowedEmployeeIds = List.of(currentEmployeeId);
+
         }
 
-        Specification<Payroll> spec =
-                PayrollSpecification.filter(
-                        employeeId,
-                        month,
-                        year,
-                        status
-                );
+        // ===== MANAGER =====
+        else if (SecurityUtil.hasRole("ROLE_MANAGER")) {
+
+            allowedEmployeeIds =
+                    employeeClient.getSubordinates(currentEmployeeId);
+
+        }
+
+        // ===== nếu user có filter employeeId =====
+        if (employeeId != null && allowedEmployeeIds != null) {
+
+            if (!allowedEmployeeIds.contains(employeeId)) {
+                throw new BadRequestException("You cannot view payroll of this employee");
+            }
+
+            allowedEmployeeIds = List.of(employeeId);
+        }
+
+        Specification<Payroll> spec;
+
+        // ===== ADMIN (không bị giới hạn employee) =====
+        if (allowedEmployeeIds == null) {
+
+            spec = PayrollSpecification.filter(
+                    employeeId,
+                    month,
+                    year,
+                    status
+            );
+
+        } else {
+
+            spec = PayrollSpecification.filterByEmployees(
+                    allowedEmployeeIds,
+                    month,
+                    year,
+                    status
+            );
+
+        }
+
+        Page<Payroll> page =
+                payrollRepository.findAll(spec, pageable);
+
+        List<ResPayrollDTO> list =
+                page.getContent()
+                        .stream()
+                        .map(payrollMapper::toDTO)
+                        .toList();
+
+        return paginationMapper.convertToResultPaginationDTO(
+                pageable.getPageNumber() + 1,
+                pageable.getPageSize(),
+                page.getTotalPages(),
+                page.getTotalElements(),
+                list
+        );
+    }
+
+    public ResultPaginationDTO listPersonal(
+            UUID employeeId,
+            Integer month,
+            Integer year,
+            PayrollStatus status,
+            Pageable pageable
+    ) {
+
+        UUID currentEmployeeId =
+                UUID.fromString(SecurityUtil.getCurrentEmployeeId());
+
+
+        Specification<Payroll> spec = PayrollSpecification.filter(
+                    currentEmployeeId,
+                    month,
+                    year,
+                    status
+        );
 
         Page<Payroll> page =
                 payrollRepository.findAll(spec, pageable);

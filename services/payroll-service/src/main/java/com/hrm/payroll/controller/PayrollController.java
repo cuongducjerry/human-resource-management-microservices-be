@@ -37,6 +37,22 @@ public class PayrollController {
         );
     }
 
+    @GetMapping("/personal")
+    @PreAuthorize("hasAuthority('PAYROLL_LIST_PERSONAL')")
+    @ApiMessage("Fetch payroll list (employee, manager)")
+    public ResponseEntity<ResultPaginationDTO> listPayrollPersonal(
+            @RequestParam(required = false) UUID employeeId,
+            @RequestParam(required = false) Integer month,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) PayrollStatus status,
+            Pageable pageable
+    ) {
+
+        return ResponseEntity.ok(
+                payrollService.listPersonal(employeeId, month, year, status, pageable)
+        );
+    }
+
     @PostMapping("/calculate-all")
     @PreAuthorize("hasAuthority('PAYROLL_CALCULATE')")
     @ApiMessage("Calculate all payroll")

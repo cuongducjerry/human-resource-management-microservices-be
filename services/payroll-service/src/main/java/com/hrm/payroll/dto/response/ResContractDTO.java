@@ -24,6 +24,7 @@ public class ResContractDTO {
     private LocalDate endDate;
     private BigDecimal salary;
     private String description;
+    private String fileUrl;
 
     private Instant createdAt;
     private Instant updatedAt;

@@ -21,6 +21,7 @@ public class ContractMapper {
                 .updatedAt(c.getUpdatedAt())
                 .createdBy(c.getCreatedBy())
                 .updatedBy(c.getUpdatedBy())
+                .fileUrl(c.getFileUrl())
                 .build();
     }
 

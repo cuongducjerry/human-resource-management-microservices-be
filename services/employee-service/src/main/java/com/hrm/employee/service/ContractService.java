@@ -14,8 +14,10 @@ import com.hrm.employee.mapper.PaginationMapper;
 import com.hrm.employee.repository.ContractRepository;
 import com.hrm.employee.repository.EmployeeRepository;
 import com.hrm.employee.specification.ContractSpecification;
+import com.hrm.employee.util.SecurityUtil;
 import com.hrm.employee.util.constant.ContractStatus;
 import com.hrm.employee.util.constant.ContractType;
+import com.hrm.employee.util.error.ForbiddenException;
 import com.hrm.employee.util.error.IdInvalidException;
 import jakarta.ws.rs.BadRequestException;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +26,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -42,23 +45,29 @@ public class ContractService {
     private final ContractMapper contractMapper;
     private final EmployeeMapper employeeMapper;
     private final AuthClient authClient;
+    private final CloudinaryService cloudinaryService;
+    private final EmployeeService employeeService;
 
     // ================= CREATE =================
-    public ResContractDTO create(ReqCreateContractDTO req) {
+    public ResContractDTO create(ReqCreateContractDTO req, MultipartFile file) {
 
-        // validate date
         if (req.getEndDate() != null
                 && req.getEndDate().isBefore(req.getStartDate())) {
             throw new BadRequestException("End date must be after start date");
         }
 
-        // check existing active contract
         if (contractRepository.existsByEmployeeIdAndStatus(
                 req.getEmployeeId(),
                 ContractStatus.ACTIVE)) {
 
             throw new BadRequestException(
                     "Employee already has an active contract");
+        }
+
+        String fileUrl = null;
+
+        if (file != null && !file.isEmpty()) {
+            fileUrl = cloudinaryService.uploadContractFile(file);
         }
 
         Contract contract = Contract.builder()
@@ -69,11 +78,12 @@ public class ContractService {
                 .endDate(req.getEndDate())
                 .salary(req.getSalary())
                 .description(req.getDescription())
+                .fileUrl(fileUrl)
                 .build();
 
         contractRepository.save(contract);
 
-        return this.contractMapper.convertToResContractDTO(contract);
+        return contractMapper.convertToResContractDTO(contract);
     }
 
     // ================= LIST =================
@@ -84,10 +94,36 @@ public class ContractService {
             Pageable pageable
     ) {
 
-        Specification<Contract> spec =
-                ContractSpecification.filter(id, status, type);
+        UUID currentEmployeeId =
+                UUID.fromString(SecurityUtil.getCurrentEmployeeId());
 
-        Page<Contract> page = contractRepository.findAll(spec, pageable);
+        Specification<Contract> spec;
+
+        // ===== MANAGER =====
+        if (SecurityUtil.hasRole("ROLE_MANAGER")) {
+
+            List<UUID> subordinates = employeeService.getSubordinateIds(currentEmployeeId);
+
+            spec = ContractSpecification.filterForManager(
+                    id,
+                    subordinates,
+                    status,
+                    type
+            );
+        }
+
+        // ===== HR / ADMIN =====
+        else {
+
+            spec = ContractSpecification.filterForAdmin(
+                    id,
+                    status,
+                    type
+            );
+        }
+
+        Page<Contract> page =
+                contractRepository.findAll(spec, pageable);
 
         int pageNumber = pageable.getPageNumber() + 1;
         int pageSize = pageable.getPageSize();
@@ -97,24 +133,96 @@ public class ContractService {
         List<ResContractDTO> list = page.getContent()
                 .stream()
                 .map(contractMapper::convertToResContractDTO)
-                .collect(Collectors.toList());
+                .toList();
 
         return paginationMapper.convertToResultPaginationDTO(
-                pageNumber, pageSize, totalPages, totalElements, list);
+                pageNumber,
+                pageSize,
+                totalPages,
+                totalElements,
+                list
+        );
+    }
 
+
+    public ResultPaginationDTO getAllPersonal(
+            UUID id,
+            ContractStatus status,
+            ContractType type,
+            Pageable pageable
+    ) {
+
+        UUID currentEmployeeId = UUID.fromString(SecurityUtil.getCurrentEmployeeId());
+
+        Specification<Contract> spec = null;
+
+        // ===== EMPLOYEE =====
+        if (SecurityUtil.hasRole("ROLE_EMPLOYEE") || SecurityUtil.hasRole("ROLE_MANAGER")) {
+
+            spec = ContractSpecification.filter(
+                    currentEmployeeId,
+                    status,
+                    type
+            );
+        }
+
+        Page<Contract> page =
+                contractRepository.findAll(spec, pageable);
+
+        int pageNumber = pageable.getPageNumber() + 1;
+        int pageSize = pageable.getPageSize();
+        int totalPages = page.getTotalPages();
+        long totalElements = page.getTotalElements();
+
+        List<ResContractDTO> list = page.getContent()
+                .stream()
+                .map(contractMapper::convertToResContractDTO)
+                .toList();
+
+        return paginationMapper.convertToResultPaginationDTO(
+                pageNumber,
+                pageSize,
+                totalPages,
+                totalElements,
+                list
+        );
     }
 
     // ================= GET BY ID =================
     public ResContractDTO getById(UUID id) {
 
         Contract contract = contractRepository.findById(id)
-                .orElseThrow(() -> new IdInvalidException("Contract not found"));
+                .orElseThrow(() ->
+                        new IdInvalidException("Contract not found"));
 
-        return this.contractMapper.convertToResContractDTO(contract);
+        UUID currentEmployeeId =
+                UUID.fromString(SecurityUtil.getCurrentEmployeeId());
+
+        // ===== EMPLOYEE =====
+        if (SecurityUtil.hasRole("ROLE_EMPLOYEE")) {
+
+            if (!contract.getEmployeeId().equals(currentEmployeeId)) {
+                throw new ForbiddenException("You cannot access this contract");
+            }
+        }
+
+        // ===== MANAGER =====
+        if (SecurityUtil.hasRole("ROLE_MANAGER")) {
+
+            List<UUID> subordinates = employeeService.getSubordinateIds(currentEmployeeId);
+
+            subordinates.add(currentEmployeeId);
+
+            if (!subordinates.contains(contract.getEmployeeId())) {
+                throw new ForbiddenException("You cannot access this contract");
+            }
+        }
+
+        return contractMapper.convertToResContractDTO(contract);
     }
 
     // ================= UPDATE =================
-    public ResContractDTO update(UUID id, ReqUpdateContractDTO req) {
+    public ResContractDTO update(UUID id, ReqUpdateContractDTO req, MultipartFile file) {
 
         Contract contract = contractRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Contract not found"));
@@ -129,17 +237,34 @@ public class ContractService {
             throw new BadRequestException("End date must be after start date");
         }
 
+        // ===== UPDATE BASIC INFO =====
         contract.setType(req.getType());
         contract.setStartDate(req.getStartDate());
         contract.setEndDate(req.getEndDate());
         contract.setSalary(req.getSalary());
         contract.setDescription(req.getDescription());
 
-        return this.contractMapper.convertToResContractDTO(contract);
+        // ===== UPDATE FILE =====
+        if (file != null && !file.isEmpty()) {
+
+            // delete old file
+            if (contract.getFileUrl() != null && !contract.getFileUrl().isBlank()) {
+                cloudinaryService.deleteContractFile(contract.getFileUrl());
+            }
+
+            // upload new file
+            String newFileUrl = cloudinaryService.uploadContractFile(file);
+
+            contract.setFileUrl(newFileUrl);
+        }
+
+        contractRepository.save(contract);
+
+        return contractMapper.convertToResContractDTO(contract);
     }
 
     // ================= RENEW =================
-    public ResContractDTO renew(UUID id, ReqUpdateContractDTO req) {
+    public ResContractDTO renew(UUID id, ReqUpdateContractDTO req, MultipartFile file) {
 
         Contract oldContract = contractRepository.findById(id)
                 .orElseThrow(() -> new IdInvalidException("Contract not found"));
@@ -148,11 +273,18 @@ public class ContractService {
             throw new BadRequestException("Only active contract can be renewed");
         }
 
-        // Close old contract
+        // close old contract
         oldContract.setStatus(ContractStatus.TERMINATED);
         oldContract.setEndDate(LocalDate.now());
 
-        // Create new contract
+        String fileUrl = null;
+
+        // upload new contract file
+        if (file != null && !file.isEmpty()) {
+            fileUrl = cloudinaryService.uploadContractFile(file);
+        }
+
+        // create new contract
         Contract newContract = Contract.builder()
                 .employeeId(oldContract.getEmployeeId())
                 .type(req.getType())
@@ -161,11 +293,13 @@ public class ContractService {
                 .endDate(req.getEndDate())
                 .salary(req.getSalary())
                 .description(req.getDescription())
+                .fileUrl(fileUrl)
                 .build();
 
+        contractRepository.save(oldContract);
         contractRepository.save(newContract);
 
-        return this.contractMapper.convertToResContractDTO(newContract);
+        return contractMapper.convertToResContractDTO(newContract);
     }
 
     public ResContractDTO updateStatus(UUID id, ContractStatus status) {

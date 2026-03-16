@@ -14,9 +14,11 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
@@ -29,14 +31,16 @@ public class ContractController {
     private final ContractService contractService;
 
     // ================= CREATE =================
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAuthority('CONTRACT_CREATE')")
     @ApiMessage("Create contract")
     public ResponseEntity<ResContractDTO> create(
-            @Valid @RequestBody ReqCreateContractDTO req) {
+            @ModelAttribute ReqCreateContractDTO req,
+            @RequestParam(required = false) MultipartFile file
+    ) {
 
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(contractService.create(req));
+                .body(contractService.create(req, file));
     }
 
     @GetMapping("/available-employees")
@@ -65,6 +69,21 @@ public class ContractController {
         );
     }
 
+    @GetMapping("/personal")
+    @PreAuthorize("hasAuthority('CONTRACT_LIST_PERSONAL')")
+    @ApiMessage("Fetch all contracts (employee, manager)")
+    public ResponseEntity<ResultPaginationDTO> getAllContractPersonal(
+            @RequestParam(required = false) UUID id,
+            @RequestParam(required = false) ContractStatus status,
+            @RequestParam(required = false) ContractType type,
+            Pageable pageable
+    ) {
+
+        return ResponseEntity.status(HttpStatus.OK).body(
+                contractService.getAllPersonal(id, status, type, pageable)
+        );
+    }
+
     // ================= VIEW DETAIL =================
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('CONTRACT_VIEW')")
@@ -73,28 +92,30 @@ public class ContractController {
         return ResponseEntity.status(HttpStatus.OK).body(contractService.getById(id));
     }
 
-    @PutMapping("/{id}")
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAuthority('CONTRACT_UPDATE')")
     @ApiMessage("Update contract")
     public ResponseEntity<ResContractDTO> update(
             @PathVariable UUID id,
-            @Valid @RequestBody ReqUpdateContractDTO req
+            @ModelAttribute ReqUpdateContractDTO req,
+            @RequestParam(required = false) MultipartFile file
     ) {
 
-        return ResponseEntity.ok(contractService.update(id, req));
+        return ResponseEntity.ok(contractService.update(id, req, file));
     }
 
     // ================= RENEW =================
-    @PostMapping("/{id}/renew")
+    @PostMapping(value = "/{id}/renew", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAuthority('CONTRACT_RENEW')")
     @ApiMessage("Renew contract")
     public ResponseEntity<ResContractDTO> renew(
             @PathVariable UUID id,
-            @Valid @RequestBody ReqUpdateContractDTO req
+            @ModelAttribute ReqUpdateContractDTO req,
+            @RequestParam(required = false) MultipartFile file
     ) {
 
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(contractService.renew(id, req));
+                .body(contractService.renew(id, req, file));
     }
 
     @PatchMapping("/{id}/status")
