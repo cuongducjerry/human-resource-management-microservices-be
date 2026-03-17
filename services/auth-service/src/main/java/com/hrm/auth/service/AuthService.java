@@ -640,9 +640,16 @@ public class AuthService {
                 employeeId = jsonNode.get("sub").asText();
             }
 
-            String username = jsonNode.has("preferred_username")
-                    ? jsonNode.get("preferred_username").asText()
-                    : null;
+            String givenName = jsonNode.has("given_name")
+                    ? jsonNode.get("given_name").asText()
+                    : "";
+
+            String familyName = jsonNode.has("family_name")
+                    ? jsonNode.get("family_name").asText()
+                    : "";
+
+            // full name = family + given (VN)
+            String fullName = (familyName + " " + givenName).trim();
 
             String email = jsonNode.has("email")
                     ? jsonNode.get("email").asText()
@@ -664,7 +671,7 @@ public class AuthService {
 
             return new ResLoginDTO.UserAccount(
                     employeeId,
-                    username,
+                    fullName,
                     email,
                     roles,
                     employeeId

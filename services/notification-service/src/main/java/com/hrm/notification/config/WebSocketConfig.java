@@ -2,6 +2,7 @@ package com.hrm.notification.config;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
@@ -13,13 +14,14 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 public class WebSocketConfig
         implements WebSocketMessageBrokerConfigurer {
 
-    private final UserHandshakeHandler handshakeHandler;
+//    private final UserHandshakeHandler handshakeHandler;
+    private final AuthChannelInterceptor authChannelInterceptor;
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws-hrm-notification")
-                .setHandshakeHandler(handshakeHandler)
-                .setAllowedOriginPatterns("*")
+//                .setHandshakeHandler(handshakeHandler)
+                .setAllowedOriginPatterns("http://localhost:3000")
                 .withSockJS();
     }
 
@@ -29,4 +31,10 @@ public class WebSocketConfig
         registry.setUserDestinationPrefix("/user");      // 1-1
         registry.setApplicationDestinationPrefixes("/app"); // client -> server
     }
+
+    @Override
+    public void configureClientInboundChannel(ChannelRegistration registration) {
+        registration.interceptors(authChannelInterceptor);
+    }
+
 }

@@ -47,6 +47,13 @@ spring:
               predicates:
                 - Path=/api/notifications/**
 
+            - id: notification-ws
+              uri: lb:ws://notification-service
+              predicates:
+                - Path=/ws-hrm-notification/**
+              filters:
+                - PreserveHostHeader
+
             - id: auth-service
               uri: lb://auth-service
               predicates:

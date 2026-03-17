@@ -27,25 +27,19 @@ public class UserHandshakeHandler extends DefaultHandshakeHandler {
         ServletServerHttpRequest servlet =
                 (ServletServerHttpRequest) request;
 
-        String auth =
-                servlet.getServletRequest().getHeader("Authorization");
+        String token = servlet.getServletRequest().getParameter("token");
 
-        if (auth == null || !auth.startsWith("Bearer ")) {
+        if (token == null || token.isEmpty()) {
             return null;
         }
 
-        String token = auth.substring(7);
-
         Jwt jwt = jwtDecoder.decode(token);
 
-        String userId = jwt.getSubject(); // sub
+        String employeeId = jwt.getClaimAsString("employeeId");
 
-        attributes.put("employeeId",
-                jwt.getClaimAsString("employeeId"));
+        attributes.put("employeeId", employeeId);
+        attributes.put("email", jwt.getClaimAsString("email"));
 
-        attributes.put("email",
-                jwt.getClaimAsString("email"));
-
-        return () -> userId;
+        return () -> employeeId;
     }
 }

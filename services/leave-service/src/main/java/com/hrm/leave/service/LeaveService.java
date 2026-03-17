@@ -84,6 +84,7 @@ public class LeaveService {
                 .totalDays(totalDays)
                 .status(LeaveStatus.PENDING)
                 .reason(req.getReason())
+                .managerId(employee.getManagerId())
                 .escalated(false)
                 .build();
 
