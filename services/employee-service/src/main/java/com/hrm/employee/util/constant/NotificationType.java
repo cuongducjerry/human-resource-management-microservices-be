@@ -4,5 +4,7 @@ public enum NotificationType {
     EMPLOYEE,
     LEAVE,
     PAYROLL,
-    SYSTEM
+    SYSTEM,
+    LEAVE_REQUEST,
+    CONTRACT
 }

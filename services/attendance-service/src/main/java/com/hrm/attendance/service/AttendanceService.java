@@ -1,11 +1,14 @@
 package com.hrm.attendance.service;
 
 import com.hrm.attendance.client.EmployeeClient;
+import com.hrm.attendance.dto.request.AttendanceDashboardDTO;
 import com.hrm.attendance.dto.response.ResAttendanceDTO;
+import com.hrm.attendance.dto.response.ResEmployeeDTO;
 import com.hrm.attendance.dto.response.ResultPaginationDTO;
 import com.hrm.attendance.entity.Attendance;
 import com.hrm.attendance.entity.WorkShift;
 import com.hrm.attendance.event.AttendanceRecordedEvent;
+import com.hrm.attendance.event.DashboardEvent;
 import com.hrm.attendance.mapper.AttendanceMapper;
 import com.hrm.attendance.mapper.PaginationMapper;
 import com.hrm.attendance.repository.AttendanceRepository;
@@ -90,6 +93,24 @@ public class AttendanceService {
                 .build();
 
         attendanceRepository.save(attendance);
+
+        if (isLate) {
+            ResEmployeeDTO employeeDto = employeeClient.getInternal(employeeId);
+
+            DashboardEvent dashboardEvent = DashboardEvent.builder()
+                    .type("ATTENDANCE_LATE")
+                    .data(AttendanceDashboardDTO.builder()
+                            .employeeId(employeeId)
+                            .organizationId(employeeDto.getOrganizationId())
+                            .positionId(employeeDto.getPositionId())
+                            .managerId(employeeDto.getManagerId())
+                            .late(true)
+                            .build())
+                    .createdAt(LocalDateTime.now())
+                    .build();
+
+            eventPublisher.publishEvent(dashboardEvent);
+        }
 
         return attendanceMapper.toDTO(attendance);
     }

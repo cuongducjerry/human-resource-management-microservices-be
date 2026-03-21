@@ -1,6 +1,7 @@
 package com.hrm.leave.service;
 
 import com.hrm.leave.client.EmployeeClient;
+import com.hrm.leave.dto.request.LeaveDashboardDTO;
 import com.hrm.leave.dto.request.ReqCreateLeaveRequestDTO;
 import com.hrm.leave.dto.response.ResEmployeeDTO;
 import com.hrm.leave.dto.response.ResLeaveBalanceDTO;
@@ -8,10 +9,7 @@ import com.hrm.leave.dto.response.ResLeaveRequestDTO;
 import com.hrm.leave.dto.response.ResultPaginationDTO;
 import com.hrm.leave.entity.LeaveBalance;
 import com.hrm.leave.entity.LeaveRequest;
-import com.hrm.leave.event.EmployeeCreatedEvent;
-import com.hrm.leave.event.LeaveApprovedEvent;
-import com.hrm.leave.event.LeaveCancelledEvent;
-import com.hrm.leave.event.NotificationEvent;
+import com.hrm.leave.event.*;
 import com.hrm.leave.mapper.LeaveMapper;
 import com.hrm.leave.mapper.PaginationMapper;
 import com.hrm.leave.repository.LeaveBalanceRepository;
@@ -33,6 +31,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.Year;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -135,6 +134,8 @@ public class LeaveService {
 
         leaveRequestRepository.save(leave);
 
+        ResEmployeeDTO employeeDto = employeeClient.getInternal(leave.getEmployeeId());
+
         LeaveApprovedEvent event = new LeaveApprovedEvent(
                         leave.getId(),
                         leave.getEmployeeId(),
@@ -150,13 +151,30 @@ public class LeaveService {
         NotificationEvent notificationEvent = NotificationEvent.builder()
                 .eventId(UUID.randomUUID().toString())
                 .employeeId(leave.getEmployeeId().toString())
-                .type(NotificationType.LEAVE)
+                .type(NotificationType.LEAVE_REQUEST)
                 .title("Leave Request Approved")
                 .content("Your leave request has been approved successfully.")
                 .sendEmail(false)
                 .build();
 
         eventPublisher.publishEvent(notificationEvent);
+
+        DashboardEvent dashboardEvent = DashboardEvent.builder()
+                .type("LEAVE_APPROVED")
+                .data(LeaveDashboardDTO.builder()
+                        .employeeId(leave.getEmployeeId())
+                        .leaveType(leave.getLeaveType())
+                        .totalDays(leave.getTotalDays())
+                        .startDate(leave.getStartDate())
+                        .endDate(leave.getEndDate())
+                        .organizationId(leave.getManagerId())
+                        .positionId(employeeDto.getPositionId())
+                        .managerId(employeeDto.getManagerId())
+                        .build())
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        eventPublisher.publishEvent(dashboardEvent);
 
     }
 
@@ -172,7 +190,7 @@ public class LeaveService {
         NotificationEvent notification = NotificationEvent.builder()
                 .eventId(UUID.randomUUID().toString())
                 .employeeId(leave.getEmployeeId().toString())
-                .type(NotificationType.LEAVE)
+                .type(NotificationType.LEAVE_REQUEST)
                 .title("Leave Request Rejected")
                 .content("Your leave request has been rejected.")
                 .sendEmail(false)
@@ -214,6 +232,8 @@ public class LeaveService {
         leave.setStatus(LeaveStatus.CANCELLED);
         leaveRequestRepository.save(leave);
 
+        ResEmployeeDTO employeeDto = employeeClient.getInternal(leave.getEmployeeId());
+
         LeaveCancelledEvent event =
                 new LeaveCancelledEvent(
                         leave.getId(),
@@ -229,13 +249,30 @@ public class LeaveService {
         NotificationEvent notification = NotificationEvent.builder()
                 .eventId(UUID.randomUUID().toString())
                 .employeeId(leave.getEmployeeId().toString())
-                .type(NotificationType.LEAVE)
+                .type(NotificationType.LEAVE_REQUEST)
                 .title("Leave Request Cancelled")
                 .content("Your leave request has been cancelled successfully.")
                 .sendEmail(true)
                 .build();
 
         eventPublisher.publishEvent(notification);
+
+        DashboardEvent dashboardEvent = DashboardEvent.builder()
+                .type("LEAVE_CANCELLED")
+                .data(LeaveDashboardDTO.builder()
+                        .employeeId(leave.getEmployeeId())
+                        .leaveType(leave.getLeaveType())
+                        .totalDays(leave.getTotalDays())
+                        .startDate(leave.getStartDate())
+                        .endDate(leave.getEndDate())
+                        .organizationId(leave.getManagerId())
+                        .positionId(employeeDto.getPositionId())
+                        .managerId(employeeDto.getManagerId())
+                        .build())
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        eventPublisher.publishEvent(dashboardEvent);
 
     }
 

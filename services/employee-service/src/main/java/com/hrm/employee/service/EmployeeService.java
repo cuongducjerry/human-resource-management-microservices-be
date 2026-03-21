@@ -7,6 +7,7 @@ import com.hrm.employee.client.OrganizationClient;
 import com.hrm.employee.dto.request.*;
 import com.hrm.employee.dto.response.*;
 import com.hrm.employee.entity.Employee;
+import com.hrm.employee.event.DashboardEvent;
 import com.hrm.employee.event.EmployeeCreatedEvent;
 import com.hrm.employee.event.NotificationEvent;
 import com.hrm.employee.mapper.EmployeeMapper;
@@ -31,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -196,6 +198,20 @@ public class EmployeeService {
                             .type(NotificationType.EMPLOYEE)
                             .email(employee.getEmail())
                             .sendEmail(true)
+                            .build()
+            );
+
+            eventPublisher.publishEvent(
+                    DashboardEvent.builder()
+                            .type("EMPLOYEE_CREATED")
+                            .data(EmployeeDashboardDTO.builder()
+                                    .id(employee.getId())
+                                    .gender(employee.getGender().name())
+                                    .organizationId(employee.getOrganizationId())
+                                    .positionId(employee.getPositionId())
+                                    .managerId(employee.getManagerId())
+                                    .build())
+                            .createdAt(LocalDateTime.now())
                             .build()
             );
 

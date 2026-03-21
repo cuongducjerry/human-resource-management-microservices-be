@@ -44,7 +44,7 @@ public class ContractExpirationService {
                         .title("Contract expiring soon")
                         .content("Contract of employee " + contract.getEmployeeId()
                                 + " will expire on " + contract.getEndDate())
-                        .type(NotificationType.SYSTEM)
+                        .type(NotificationType.CONTRACT)
                         .sendEmail(true)
                         .build();
 

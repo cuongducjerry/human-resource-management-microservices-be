@@ -1,12 +1,15 @@
 package com.hrm.organization.service;
 
 import com.hrm.organization.client.EmployeeClient;
+import com.hrm.organization.dto.request.OrganizationDashboardDTO;
+import com.hrm.organization.dto.request.PositionDashboardDTO;
 import com.hrm.organization.dto.request.ReqCreatePositionDTO;
 import com.hrm.organization.dto.request.ReqUpdatePositionDTO;
 import com.hrm.organization.dto.response.ResPositionDTO;
 import com.hrm.organization.dto.response.ResultPaginationDTO;
 import com.hrm.organization.entity.Organization;
 import com.hrm.organization.entity.Position;
+import com.hrm.organization.event.DashboardEvent;
 import com.hrm.organization.mapper.PaginationMapper;
 import com.hrm.organization.mapper.PositionMapper;
 import com.hrm.organization.repository.OrganizationRepository;
@@ -15,12 +18,14 @@ import com.hrm.organization.specification.PositionSpecification;
 import com.hrm.organization.util.error.BadRequestException;
 import com.hrm.organization.util.error.IdInvalidException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -34,6 +39,7 @@ public class PositionService {
     private final PositionMapper positionMapper;
     private final PaginationMapper paginationMapper;
     private final EmployeeClient employeeClient;
+    private final ApplicationEventPublisher eventPublisher;
 
     // ================= CREATE =================
     public ResPositionDTO create(ReqCreatePositionDTO req) {
@@ -49,6 +55,18 @@ public class PositionService {
                 .build();
 
         positionRepository.save(position);
+
+        // ------------------- publish dashboard event -------------------
+
+        eventPublisher.publishEvent(
+                DashboardEvent.builder()
+                    .type("POSITION_CREATED")
+                    .data(PositionDashboardDTO.builder()
+                            .id(position.getId())
+                            .organizationId(position.getOrganizationId())
+                            .createdAt(LocalDateTime.now())
+                            .build())
+                    .build());
 
         return positionMapper.convertToResPositionDTO(position);
     }
@@ -130,6 +148,19 @@ public class PositionService {
         }
 
         positionRepository.delete(position);
+
+        // publish event
+        eventPublisher.publishEvent(
+                DashboardEvent.builder()
+                        .type("POSITION_DELETED")
+                        .data(PositionDashboardDTO.builder()
+                                .id(position.getId())
+                                .organizationId(position.getOrganizationId())
+                                .createdAt(LocalDateTime.now())
+                                .build())
+                        .build()
+        );
+
     }
 
     @Transactional

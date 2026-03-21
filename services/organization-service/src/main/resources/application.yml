@@ -21,6 +21,12 @@ spring:
         jwt:
           issuer-uri: http://localhost:9090/realms/hrm-realm
 
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
 eureka:
   client:
     service-url:

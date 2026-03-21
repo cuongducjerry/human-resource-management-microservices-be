@@ -45,7 +45,8 @@ public class AuthController {
         ResponseCookie cookie = ResponseCookie
                 .from("refresh_token", res.getRefreshToken())
                 .httpOnly(true)
-                .secure(true)
+                .secure(false)
+                .sameSite("Lax")
                 .path("/")
                 .maxAge(refreshTokenExpiration)
                 .build();
@@ -69,12 +70,16 @@ public class AuthController {
             String refreshToken
     ) {
 
+        System.out.println("======================== RECEIVED REFRESH TOKEN ==========================");
+        System.out.println(refreshToken);
+
         ResLoginDTO result = authService.refresh(refreshToken);
 
         ResponseCookie cookie = ResponseCookie
                 .from("refresh_token", result.getRefreshToken())
                 .httpOnly(true)
-                .secure(true)
+                .secure(false)
+                .sameSite("Lax")
                 .path("/")
                 .maxAge(refreshTokenExpiration)
                 .build();

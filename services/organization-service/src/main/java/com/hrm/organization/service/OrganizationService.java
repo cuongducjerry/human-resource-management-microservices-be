@@ -1,12 +1,14 @@
 package com.hrm.organization.service;
 
 import com.hrm.organization.client.EmployeeClient;
+import com.hrm.organization.dto.request.OrganizationDashboardDTO;
 import com.hrm.organization.dto.request.ReqCreateOrganizationDTO;
 import com.hrm.organization.dto.request.ReqUpdateOrganizationDTO;
 import com.hrm.organization.dto.response.ResOrganizationDTO;
 import com.hrm.organization.dto.response.ResOrganizationTreeDTO;
 import com.hrm.organization.dto.response.ResultPaginationDTO;
 import com.hrm.organization.entity.Organization;
+import com.hrm.organization.event.DashboardEvent;
 import com.hrm.organization.mapper.OrganizationMapper;
 import com.hrm.organization.mapper.PaginationMapper;
 import com.hrm.organization.repository.OrganizationRepository;
@@ -17,12 +19,14 @@ import com.hrm.organization.util.error.BadRequestException;
 import com.hrm.organization.util.error.IdInvalidException;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -35,6 +39,7 @@ public class OrganizationService {
     private final OrganizationMapper organizationMapper;
     private final PaginationMapper paginationMapper;
     private final EmployeeClient employeeClient;
+    private final ApplicationEventPublisher eventPublisher;
 
     // ================= CREATE =================
     public ResOrganizationDTO create(ReqCreateOrganizationDTO req) {
@@ -50,6 +55,16 @@ public class OrganizationService {
                 .build();
 
         organizationRepository.save(org);
+
+        eventPublisher.publishEvent(
+                DashboardEvent.builder()
+                        .type("ORGANIZATION_CREATED")
+                        .data(OrganizationDashboardDTO.builder()
+                                .id(org.getId())
+                                .parentId(org.getParentId())
+                                .build())
+                        .build()
+        );
 
         return organizationMapper.convertToResOrganizationDTO(org);
     }
@@ -111,6 +126,18 @@ public class OrganizationService {
         }
 
         organizationRepository.delete(org);
+
+        // publish event
+        eventPublisher.publishEvent(
+                DashboardEvent.builder()
+                        .type("ORGANIZATION_DELETED")
+                        .data(OrganizationDashboardDTO.builder()
+                                .id(org.getId())
+                                .parentId(org.getParentId())
+                                .build())
+                        .build()
+        );
+
     }
 
     // ================= UPDATE =================
