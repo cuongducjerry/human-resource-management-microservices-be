@@ -1,3 +1,53 @@
+#server:
+#  port: 8084
+#
+#spring:
+#  application:
+#    name: leave-service
+#
+#  datasource:
+#    url: jdbc:postgresql://localhost:5432/hrm_leave
+#    username: postgres
+#    password: 123456
+#
+#  jpa:
+#    hibernate:
+#      ddl-auto: update
+#    show-sql: true
+#
+#  security:
+#    oauth2:
+#      resourceserver:
+#        jwt:
+#          issuer-uri: http://localhost:9090/realms/hrm-realm
+#
+#  kafka:
+#    bootstrap-servers: localhost:9092
+#
+#    producer:
+#      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+#      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+#
+#    consumer:
+#      group-id: leave-group
+#      auto-offset-reset: earliest
+#      enable-auto-commit: true
+#      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+#      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+#
+#    listener:
+#      missing-topics-fatal: false
+#
+#eureka:
+#  client:
+#    service-url:
+#      defaultZone: http://localhost:8761/eureka
+
+#keycloak:
+#  token-url: http://localhost:9090/realms/hrm-realm/protocol/openid-connect/token
+#  client-id: leave-service
+#  client-secret: NrhYsAoq0ybFn2CRD9HRUpgXljSLqd9k
+
 server:
   port: 8084
 
@@ -6,7 +56,7 @@ spring:
     name: leave-service
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/hrm_leave
+    url: jdbc:postgresql://postgres-leave:5432/hrm_leave  # container Postgres
     username: postgres
     password: 123456
 
@@ -19,31 +69,23 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:9090/realms/hrm-realm
+          issuer-uri: http://keycloak:8080/realms/hrm-realm
 
   kafka:
-    bootstrap-servers: localhost:9092
-
+    bootstrap-servers: kafka:9092  # container Kafka
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-
     consumer:
       group-id: leave-group
       auto-offset-reset: earliest
       enable-auto-commit: true
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-
     listener:
       missing-topics-fatal: false
 
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka
-
-#keycloak:
-#  token-url: http://localhost:9090/realms/hrm-realm/protocol/openid-connect/token
-#  client-id: leave-service
-#  client-secret: NrhYsAoq0ybFn2CRD9HRUpgXljSLqd9k
+      defaultZone: http://registry:8761/eureka  # container Eureka

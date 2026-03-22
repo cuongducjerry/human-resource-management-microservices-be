@@ -9,6 +9,7 @@ import org.springframework.cloud.netflix.eureka.server.EnableEurekaServer;
 public class HrmRegistryApplication {
 
 	public static void main(String[] args) {
+		System.setProperty("user.timezone", "Asia/Ho_Chi_Minh");
 		SpringApplication.run(HrmRegistryApplication.class, args);
 	}
 

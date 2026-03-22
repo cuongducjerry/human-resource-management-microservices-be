@@ -1,3 +1,37 @@
+#server:
+#  port: 8083
+#
+#spring:
+#  application:
+#    name: attendance-service
+#
+#  datasource:
+#    url: jdbc:postgresql://localhost:5432/hrm_attendance
+#    username: postgres
+#    password: 123456
+#
+#  jpa:
+#    hibernate:
+#      ddl-auto: update
+#    show-sql: true
+#
+#  security:
+#    oauth2:
+#      resourceserver:
+#        jwt:
+#          issuer-uri: http://localhost:9090/realms/hrm-realm
+#
+#  kafka:
+#    bootstrap-servers: localhost:9092
+#    producer:
+#      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+#      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+#
+#eureka:
+#  client:
+#    service-url:
+#      defaultZone: http://localhost:8761/eureka
+
 server:
   port: 8083
 
@@ -6,7 +40,7 @@ spring:
     name: attendance-service
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/hrm_attendance
+    url: jdbc:postgresql://postgres-attendance:5432/hrm_attendance  # container Postgres
     username: postgres
     password: 123456
 
@@ -19,10 +53,10 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:9090/realms/hrm-realm
+          issuer-uri: http://keycloak:8080/realms/hrm-realm
 
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: kafka:9092  # container Kafka
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -30,4 +64,4 @@ spring:
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka
+      defaultZone: http://registry:8761/eureka  # container Eureka

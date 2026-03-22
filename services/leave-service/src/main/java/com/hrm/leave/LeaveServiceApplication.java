@@ -12,6 +12,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableFeignClients
 public class LeaveServiceApplication {
     public static void main(String[] args) {
+        System.setProperty("user.timezone", "Asia/Ho_Chi_Minh");
         SpringApplication.run(LeaveServiceApplication.class, args);
     }
 

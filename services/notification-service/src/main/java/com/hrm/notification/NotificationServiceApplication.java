@@ -9,6 +9,7 @@ import org.springframework.kafka.annotation.EnableKafka;
 public class NotificationServiceApplication {
 
     public static void main(String[] args) {
+        System.setProperty("user.timezone", "Asia/Ho_Chi_Minh");
         SpringApplication.run(NotificationServiceApplication.class, args);
     }
 

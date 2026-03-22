@@ -1,9 +1,9 @@
 name: hrm-system
-
 version: "3.8"
 
 services:
 
+  # ================= INFRA =================
   kafka:
     image: apache/kafka:3.7.0
     container_name: hrm-kafka
@@ -15,7 +15,7 @@ services:
       CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:29093
       KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:29093
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
@@ -25,15 +25,258 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:24.0
     container_name: hrm-keycloak
-    command: start-dev
+    command: start-dev --import-realm
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
     ports:
       - "9090:8080"
+    volumes:
+      - ./realm:/opt/keycloak/data/import
+      - keycloak-db-data:/opt/keycloak/data
 
   redis:
     image: redis:7
     container_name: hrm-redis
     ports:
       - "6379:6379"
+
+  # ================= CORE =================
+  registry:
+    build: ../services/hrm-registry
+    container_name: hrm-registry
+    ports:
+      - "8761:8761"
+
+  gateway:
+    build: ../services/hrm-gateway
+    container_name: hrm-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - registry
+    environment:
+    - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://registry:8761/eureka  
+
+  frontend:
+    build: ../../hrm-front-end/hrm-front-end
+    container_name: hrm-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - gateway
+
+  # ================= SERVICES =================
+  auth-service:
+    build: ../services/auth-service
+    container_name: auth-service
+    depends_on:
+      - registry
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-auth:5432/hrm_auth
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: 123456
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry:8761/eureka
+      SPRING_JPA_PROPERTIES_HIBERNATE_JDBC_TIME_ZONE: Asia/Ho_Chi_Minh
+      JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Ho_Chi_Minh
+
+  employee-service:
+    build: ../services/employee-service
+    container_name: employee-service
+    depends_on:
+      - registry
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-employee:5432/hrm_employee
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: 123456
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry:8761/eureka
+      SPRING_JPA_PROPERTIES_HIBERNATE_JDBC_TIME_ZONE: Asia/Ho_Chi_Minh
+      JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Ho_Chi_Minh
+
+  organization-service:
+    build: ../services/organization-service
+    container_name: organization-service
+    depends_on:
+      - registry
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-organization:5432/hrm_organization
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: 123456
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry:8761/eureka
+      SPRING_JPA_PROPERTIES_HIBERNATE_JDBC_TIME_ZONE: Asia/Ho_Chi_Minh
+      JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Ho_Chi_Minh
+
+  leave-service:
+    build: ../services/leave-service
+    container_name: leave-service
+    depends_on:
+      - registry
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-leave:5432/hrm_leave
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: 123456
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry:8761/eureka
+      SPRING_JPA_PROPERTIES_HIBERNATE_JDBC_TIME_ZONE: Asia/Ho_Chi_Minh
+      JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Ho_Chi_Minh
+
+  attendance-service:
+    build: ../services/attendance-service
+    container_name: attendance-service
+    depends_on:
+      - registry
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-attendance:5432/hrm_attendance
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: 123456
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry:8761/eureka
+      SPRING_JPA_PROPERTIES_HIBERNATE_JDBC_TIME_ZONE: Asia/Ho_Chi_Minh
+      JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Ho_Chi_Minh
+
+  payroll-service:
+    build: ../services/payroll-service
+    container_name: payroll-service
+    depends_on:
+      - registry
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-payroll:5432/hrm_payroll
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: 123456
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry:8761/eureka
+      SPRING_JPA_PROPERTIES_HIBERNATE_JDBC_TIME_ZONE: Asia/Ho_Chi_Minh
+      JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Ho_Chi_Minh
+
+  notification-service:
+    build: ../services/notification-service
+    container_name: notification-service
+    depends_on:
+      - registry
+      - kafka
+      - redis
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-notification:5432/hrm_notification
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: 123456
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry:8761/eureka
+      SPRING_JPA_PROPERTIES_HIBERNATE_JDBC_TIME_ZONE: Asia/Ho_Chi_Minh
+      JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Ho_Chi_Minh
+
+  dashboard-service:
+    build: ../services/dashboard-service
+    container_name: dashboard-service
+    depends_on:
+      - registry
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-dashboard:5432/hrm_dashboard
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: 123456
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry:8761/eureka
+      SPRING_JPA_PROPERTIES_HIBERNATE_JDBC_TIME_ZONE: Asia/Ho_Chi_Minh
+      JAVA_TOOL_OPTIONS: -Duser.timezone=Asia/Ho_Chi_Minh
+
+  # ================= POSTGRES DATABASES =================
+  postgres-auth:
+    image: postgres:15
+    container_name: postgres-auth
+    environment:
+      POSTGRES_DB: hrm_auth
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123456
+    ports:
+      - "5433:5432"
+    volumes:
+      - auth-db-data:/var/lib/postgresql/data  
+
+  postgres-employee:
+    image: postgres:15
+    container_name: postgres-employee
+    environment:
+      POSTGRES_DB: hrm_employee
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123456
+    ports:
+      - "5434:5432"
+    volumes:
+      - employee-db-data:/var/lib/postgresql/data  
+
+  postgres-organization:
+    image: postgres:15
+    container_name: postgres-organization
+    environment:
+      POSTGRES_DB: hrm_organization
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123456
+    ports:
+      - "5435:5432"
+    volumes:
+      - organization-db-data:/var/lib/postgresql/data  
+
+  postgres-leave:
+    image: postgres:15
+    container_name: postgres-leave
+    environment:
+      POSTGRES_DB: hrm_leave
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123456
+    ports:
+      - "5436:5432"
+    volumes:
+      - leave-db-data:/var/lib/postgresql/data
+
+  postgres-attendance:
+    image: postgres:15
+    container_name: postgres-attendance
+    environment:
+      POSTGRES_DB: hrm_attendance
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123456
+    ports:
+      - "5437:5432"
+    volumes:
+      - attendance-db-data:/var/lib/postgresql/data  
+
+  postgres-payroll:
+    image: postgres:15
+    container_name: postgres-payroll
+    environment:
+      POSTGRES_DB: hrm_payroll
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123456
+    ports:
+      - "5438:5432"
+    volumes:
+      - payroll-db-data:/var/lib/postgresql/data  
+
+  postgres-notification:
+    image: postgres:15
+    container_name: postgres-notification
+    environment:
+      POSTGRES_DB: hrm_notification
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123456
+    ports:
+      - "5439:5432"
+    volumes:
+      - notification-db-data:/var/lib/postgresql/data  
+
+  postgres-dashboard:
+    image: postgres:15
+    container_name: postgres-dashboard
+    environment:
+      POSTGRES_DB: hrm_dashboard
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123456
+    ports:
+      - "5440:5432"
+    volumes:
+      - dashboard-db-data:/var/lib/postgresql/data  
+
+volumes:
+  keycloak-db-data:
+  auth-db-data:
+  employee-db-data:
+  organization-db-data:
+  leave-db-data:
+  attendance-db-data:
+  payroll-db-data:
+  notification-db-data:
+  dashboard-db-data:

@@ -1,3 +1,43 @@
+#server:
+#  port: 8082
+#
+#cloudinary:
+#  cloud-name: diarx01m7
+#  api-key: 854298752232279
+#  api-secret: IRwIP5dqGKRKMBJ5KOw1zWXo84I
+#
+#spring:
+#  application:
+#    name: employee-service
+#
+#  security:
+#    oauth2:
+#      resourceserver:
+#        jwt:
+#          issuer-uri: http://localhost:9090/realms/hrm-realm
+#
+#  datasource:
+#    url: jdbc:postgresql://localhost:5432/hrm_employee
+#    username: postgres
+#    password: 123456
+#
+#  jpa:
+#    hibernate:
+#      ddl-auto: update
+#    show-sql: true
+#
+#  kafka:
+#    bootstrap-servers: localhost:9092
+#    producer:
+#      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+#      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+#
+#
+#eureka:
+#  client:
+#    service-url:
+#      defaultZone: http://localhost:8761/eureka
+
 server:
   port: 8082
 
@@ -14,10 +54,10 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:9090/realms/hrm-realm
+          issuer-uri: http://keycloak:8080/realms/hrm-realm
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/hrm_employee
+    url: jdbc:postgresql://postgres-employee:5432/hrm_employee  # Postgres container
     username: postgres
     password: 123456
 
@@ -27,13 +67,12 @@ spring:
     show-sql: true
 
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: kafka:9092
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 
-
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka
+      defaultZone: http://registry:8761/eureka  # Eureka container
