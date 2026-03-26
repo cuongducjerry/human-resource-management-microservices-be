@@ -59,7 +59,7 @@ services:
     - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://registry:8761/eureka  
 
   frontend:
-    build: ../../hrm-front-end/hrm-front-end
+    build: ../../../hrm-front-end/hrm-front-end
     container_name: hrm-frontend
     ports:
       - "3000:80"

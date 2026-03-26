@@ -129,18 +129,22 @@ public class AuthService {
 
     public ResLoginDTO.UserAccount getUserAccount() {
 
-        // 1. Get employeeId from JWT
         String employeeId = SecurityUtil.getCurrentEmployeeId();
 
         System.out.println("EMPLOYEE ID: " + employeeId);
 
-        // 2. Call employee-service
-        ResEmployeeDTO employee = employeeClient.getInternal(UUID.fromString(employeeId));
+        ResEmployeeDTO employee = null;
+
+        try {
+            employee = employeeClient.getInternal(UUID.fromString(employeeId));
+        } catch (Exception e) {
+            System.out.println("CALL EMPLOYEE FAILED");
+            e.printStackTrace();
+        }
 
         ResLoginDTO.UserAccount userGetAccount = new ResLoginDTO.UserAccount();
 
         if (employee != null) {
-
             userGetAccount.setEmployeeId(employee.getId().toString());
             userGetAccount.setEmail(employee.getEmail());
             userGetAccount.setFullName(employee.getFullName());
