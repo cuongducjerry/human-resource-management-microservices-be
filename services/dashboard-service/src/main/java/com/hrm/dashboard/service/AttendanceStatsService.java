@@ -64,7 +64,7 @@ public class AttendanceStatsService {
 
             List<AttendanceEmployeeStats> stats;
 
-            if (roles.contains("ROLE_HR_ADMIN")) {
+            if (roles.contains("ROLE_HR_ADMIN") || roles.contains("ROLE_SUPER_ADMIN")) {
                 stats = repository.findAllByMonth(year, month);
             } else if (roles.contains("ROLE_MANAGER")) {
                 stats = repository.findAllByMonth(year, month).stream()
@@ -93,7 +93,7 @@ public class AttendanceStatsService {
 
         List<AttendanceEmployeeStats> stats;
 
-        if (roles.contains("ROLE_HR_ADMIN")) {
+        if (roles.contains("ROLE_HR_ADMIN") || roles.contains("ROLE_SUPER_ADMIN")) {
             stats = repository.findAllByMonth(year, month);
         } else if (roles.contains("ROLE_MANAGER")) {
             UUID managerId = UUID.fromString(SecurityUtil.getCurrentEmployeeId());
@@ -125,7 +125,7 @@ public class AttendanceStatsService {
 
         List<AttendanceEmployeeStats> stats;
 
-        if (roles.contains("ROLE_HR_ADMIN")) {
+        if (roles.contains("ROLE_HR_ADMIN") || roles.contains("ROLE_SUPER_ADMIN")) {
             return repository.findTopLateEmployees(year, month, PageRequest.of(0, 8));
         }
 

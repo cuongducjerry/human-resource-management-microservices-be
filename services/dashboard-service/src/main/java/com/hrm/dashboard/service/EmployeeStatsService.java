@@ -54,7 +54,7 @@ public class EmployeeStatsService {
         List<String> roles = SecurityUtil.getCurrentUserRoles();
 
 
-        if (roles.contains("ROLE_HR_ADMIN")) {
+        if (roles.contains("ROLE_HR_ADMIN") || roles.contains("ROLE_SUPER_ADMIN")) {
             return repo.findAll();
         }
 
@@ -70,7 +70,7 @@ public class EmployeeStatsService {
     public int getTotalEmployeeForCurrentUser() {
         List<String> roles = SecurityUtil.getCurrentUserRoles();
 
-        if (roles.contains("ROLE_HR_ADMIN")) {
+        if (roles.contains("ROLE_HR_ADMIN") || roles.contains("ROLE_SUPER_ADMIN")) {
             return Optional.ofNullable(repo.countAll()).orElse(0);
         }
 

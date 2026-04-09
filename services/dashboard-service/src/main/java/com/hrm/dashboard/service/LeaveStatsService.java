@@ -84,7 +84,7 @@ public class LeaveStatsService {
         List<String> roles = SecurityUtil.getCurrentUserRoles();
         UUID currentUserId = UUID.fromString(SecurityUtil.getCurrentEmployeeId());
 
-        if (roles.contains("ROLE_HR_ADMIN")) {
+        if (roles.contains("ROLE_HR_ADMIN") || roles.contains("ROLE_SUPER_ADMIN")) {
             return repository.findTopByMonth(year, month, PageRequest.of(0, 8));
         }
 
@@ -119,7 +119,7 @@ public class LeaveStatsService {
 
         List<LeaveEmployeeStats> stats;
 
-        if (roles.contains("ROLE_HR_ADMIN")) {
+        if (roles.contains("ROLE_HR_ADMIN") || roles.contains("ROLE_SUPER_ADMIN")) {
             stats = repository.findAllByMonth(year, month);
 
         } else if (roles.contains("ROLE_MANAGER")) {
